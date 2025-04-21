@@ -7,10 +7,9 @@ import com.google.gson.GsonBuilder;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -118,22 +117,23 @@ public class PortAndShipManager {
     }
 
     public void moveDisplayShip(ActiveShip ship) {
+        ship.getController().tick();
         ArmorStand stand = ship.getStandEntity();
-        List<BlockDisplay> displays = ship.getDisplayBlocks();
+        List<Display> displays = ship.getDisplayBlocks();
 
         // Base location = boat position
         Location base = stand.getLocation();
 
-        for (BlockDisplay display : displays) {
+        for (Display display : displays) {
             display.teleport(base);
         }
     }
 
 
-    public void addActiveShip(Player player, ArmorStand standEntity, List<BlockDisplay> displayBlocks) {
+    public void addActiveShip(Player player, ArmorStand standEntity, List<Display> displayBlocks, Display helmBlock) {
         if (standEntity == null) return;
         // TODO: Make this persistent
-        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, displayBlocks);
+        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, displayBlocks, helmBlock);
         activeShips.put(player.getUniqueId(), ship);
     }
 
@@ -144,7 +144,7 @@ public class PortAndShipManager {
     public void activateAllShips() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             activeShips.forEach((s,v) -> moveDisplayShip(v));
-        },0L, 2L);
+        },0L, 60L);
     }
 
     public ActiveShip getActiveShipForArmorStand(ArmorStand stand) {
@@ -164,4 +164,12 @@ public class PortAndShipManager {
         }
     }
 
+    public Display getHelmBlock(List<Display> displayList) {
+        for (Display entity : displayList) {
+            if (entity instanceof ItemDisplay && ((ItemDisplay) entity).getItemStack().getType() == Material.COMPASS) {
+                return entity;
+            }
+        }
+        return null;
+    }
 }
