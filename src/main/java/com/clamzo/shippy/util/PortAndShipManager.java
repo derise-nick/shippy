@@ -7,10 +7,16 @@ import com.google.gson.GsonBuilder;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.entity.ArmorStand;
+import org.bukkit.block.Block;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -118,11 +124,11 @@ public class PortAndShipManager {
     }
 
     public void moveDisplayShip(ActiveShip ship) {
-        ArmorStand stand = ship.getStandEntity();
+        Boat boat = ship.getBoatEntity();
         List<BlockDisplay> displays = ship.getDisplayBlocks();
 
         // Base location = boat position
-        Location base = stand.getLocation();
+        Location base = boat.getLocation();
 
         for (BlockDisplay display : displays) {
             display.teleport(base);
@@ -130,10 +136,10 @@ public class PortAndShipManager {
     }
 
 
-    public void addActiveShip(Player player, ArmorStand standEntity, List<BlockDisplay> displayBlocks) {
-        if (standEntity == null) return;
+    public void addActiveShip(Player player, Boat controlBoat, List<BlockDisplay> displayBlocks) {
+        if (controlBoat == null) return;
         // TODO: Make this persistent
-        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, displayBlocks);
+        ActiveShip ship = new ActiveShip(player.getUniqueId(), controlBoat, displayBlocks);
         activeShips.put(player.getUniqueId(), ship);
     }
 
@@ -147,18 +153,18 @@ public class PortAndShipManager {
         },0L, 2L);
     }
 
-    public ActiveShip getActiveShipForArmorStand(ArmorStand stand) {
+    public ActiveShip getActiveShipForBoat(Boat boat) {
         for (Map.Entry<UUID, ActiveShip> entry : activeShips.entrySet()) {
-            if (entry.getValue().getStandEntity().equals(stand)) {
+            if (entry.getValue().getBoatEntity().equals(boat)) {
                 return entry.getValue();
             }
         }
         return null;
     }
 
-    public void removeActiveShip(ArmorStand stand) {
+    public void removeActiveShip(Boat boat) {
         for (Map.Entry<UUID, ActiveShip> entry : activeShips.entrySet()) {
-            if (entry.getValue().getStandEntity().equals(stand)) {
+            if (entry.getValue().getBoatEntity().equals(boat)) {
                 activeShips.remove(entry.getKey());
             }
         }

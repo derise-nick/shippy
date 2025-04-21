@@ -4,19 +4,23 @@ import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Boat;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Transformation;
@@ -91,17 +95,6 @@ public class ShipInteractionListener implements Listener {
 
             if (nearest == null) return;
 
-            event.setCancelled(true);
-
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation(), EntityType.ARMOR_STAND);
-            stand.setInvisible(true);
-            stand.setMarker(true); // Removes hitbox and collision
-            stand.setGravity(false);
-            stand.setInvulnerable(true);
-            stand.setCustomName("ShipController");
-            stand.setCustomNameVisible(false);
-            stand.addPassenger(nearest);
-
             // Load their ship structure
             List<SavedBlock> saved = manager.loadShipStructure(nearest.getUniqueId());
             if (saved == null || saved.isEmpty()) {
@@ -112,9 +105,9 @@ public class ShipInteractionListener implements Listener {
             List<Block> shipBlocks = new ArrayList<>();
             Location baseLoc = boat.getLocation().getBlock().getLocation();
 
-            List<BlockDisplay> displayList = spawnShipFromStructure(baseLoc, saved, stand);
+            List<BlockDisplay> displayList = spawnShipFromStructure(baseLoc, saved, boat);
             // Register the active ship
-            manager.addActiveShip(nearest, stand, displayList);
+            manager.addActiveShip(nearest, boat, displayList);
             nearest.sendMessage(NamedTextColor.GREEN + "Ship deployed!");
 
         }, 1L); // delay 1 tick
@@ -122,13 +115,13 @@ public class ShipInteractionListener implements Listener {
 
 
 
-//    @EventHandler
-//    public void onPlayerEnterBoat(VehicleEnterEvent event) {
-//        if (!(event.getEntered() instanceof Player player)) return;
-//        if (!(event.getVehicle() instanceof Boat boat)) return;
-//
-//        if (boat.getCustomName() == null || !boat.getCustomName().equals("Your Custom Ship")) return;
-//
+    @EventHandler
+    public void onPlayerEnterBoat(VehicleEnterEvent event) {
+        if (!(event.getEntered() instanceof Player player)) return;
+        if (!(event.getVehicle() instanceof Boat boat)) return;
+
+        if (boat.getCustomName() == null || !boat.getCustomName().equals("Your Custom Ship")) return;
+
 //        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
 //            if (!boat.isValid() || !boat.getPassengers().contains(player)) return;
 //
@@ -139,9 +132,9 @@ public class ShipInteractionListener implements Listener {
 //
 //
 //        }, 0L, 2L); // 2 ticks = ~100ms
-//    }
+    }
 
-    public List<BlockDisplay> spawnShipFromStructure(Location origin, List<SavedBlock> structure, ArmorStand stand) {
+    public List<BlockDisplay> spawnShipFromStructure(Location origin, List<SavedBlock> structure, Boat boat) {
         List<BlockDisplay> displays = new ArrayList<>();
         World world = origin.getWorld();
 
@@ -150,7 +143,7 @@ public class ShipInteractionListener implements Listener {
             Vector offset = new Vector(sb.dx, sb.dy-1.5, sb.dz);
 
             // Spawn at the boat’s location
-            Location spawnLoc = stand.getLocation().clone();
+            Location spawnLoc = boat.getLocation().clone();
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
             display.setBlock(sb.getBlockData());
             display.setPersistent(true);
@@ -171,35 +164,22 @@ public class ShipInteractionListener implements Listener {
         return displays;
     }
 
-//    @EventHandler
-//    public void onBoatDestroyed(VehicleDestroyEvent event) {
-//        if (!(event.getVehicle() instanceof ArmorStand stand)) return;
-//
-//        if (stand.getCustomName() == null || !stand.getCustomName().equals("ShipController")) return;
-//
-//        ActiveShip ship = manager.getActiveShipForBoat(stand);
-//        if (ship == null) return;
-//
-//        for (BlockDisplay display : ship.getDisplayBlocks()) {
-//            display.remove();
-//        }
-//
-//        manager.removeActiveShip(stand);
-//    }
-
     @EventHandler
-    public void onArmorStandRemoved(EntityRemoveFromWorldEvent event) {
-        if (!(event.getEntity() instanceof ArmorStand stand)) return;
+    public void onBoatDestroyed(VehicleDestroyEvent event) {
+        if (!(event.getVehicle() instanceof Boat boat)) return;
 
-        ActiveShip ship = manager.getActiveShipForArmorStand(stand);
+        if (boat.getCustomName() == null || !boat.getCustomName().equals("Your Custom Ship")) return;
+
+        ActiveShip ship = manager.getActiveShipForBoat(boat);
         if (ship == null) return;
 
         for (BlockDisplay display : ship.getDisplayBlocks()) {
             display.remove();
         }
 
-        manager.removeActiveShip(stand);
+        manager.removeActiveShip(boat);
     }
+
 
 
 //    private void moveShip(ActiveShip ship, Vector movement, Player player) {
