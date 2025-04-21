@@ -1,0 +1,9 @@
+name: Shippy
+version: 1.0
+main: com.clamzo.shippy.ShippyPlugin
+api-version: 1.21
+description: A test plugin that prints Hello World
+commands:
+  givePort:
+    description: Your description
+    usage: /givePort
