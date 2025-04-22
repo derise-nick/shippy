@@ -111,9 +111,9 @@ public class ShipInteractionListener implements Listener {
 
             
             ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation().clone().add(0,-1,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(true);
+            stand.setInvisible(false);
             stand.setMarker(false);
-            stand.setGravity(false);
+            stand.setGravity(true);
             stand.setInvulnerable(true);
             stand.setCustomName("ShipController");
             stand.setCustomNameVisible(false);
@@ -190,8 +190,7 @@ public class ShipInteractionListener implements Listener {
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
             display.setBlock(sb.getBlockData());
             display.setPersistent(true);
-            display.setInterpolationDuration(3); // Smooth movement
-            display.setInterpolationDelay(0);
+            display.setTeleportDuration(3); // Smooth movement
 
             // Apply relative offset as a transformation
             display.setTransformation(new Transformation(
@@ -212,15 +211,13 @@ public class ShipInteractionListener implements Listener {
         helmView.setItemStack(helm);
 
         helmView.setPersistent(true);
-        helmView.setInterpolationDuration(3); // Smooth movement
-        helmView.setInterpolationDelay(0);
+        helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
                 new Vector3f(0, 1.5f, 0),                    // Translation (relative offset)
                 new AxisAngle4f((float) Math.toRadians(180), 0, 1, 0),             // No rotation (yet)
                 new Vector3f(1, 1, 1),                   // Scale = 1
                 new AxisAngle4f(0, 0, 0, 0)              // No rotation
         ));
-
 
         displays.add(helmView);
 

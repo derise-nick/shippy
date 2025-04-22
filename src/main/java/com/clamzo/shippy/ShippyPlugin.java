@@ -32,4 +32,8 @@ public class ShippyPlugin extends JavaPlugin {
         getLogger().info("Shippy plugin has been disabled.");
         manager.savePortsToDisk();
     }
+
+    public PortAndShipManager getManager() {
+        return this.manager;
+    }
 }

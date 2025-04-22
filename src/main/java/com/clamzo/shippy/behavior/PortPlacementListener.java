@@ -30,9 +30,8 @@ public class PortPlacementListener implements Listener {
     private final int portHeight = 8;
 
     // TODO: Make the port work with whoever hit the button
-    // TODO: Fix the facing of the ports when they aren't facing north
-    // TODO: Don't save the bricks and logs
-    // TODO: Find a good, consistent button space on port spawn
+    // TODO: Fix the facing of the ports when they aren't facing south
+    // TODO: Trigger from sign use instead of button
 
     private BlockFace facing = BlockFace.NORTH;
     private final PortAndShipManager manager;
@@ -93,7 +92,6 @@ public class PortPlacementListener implements Listener {
         return true;
     }
     private void placePortStructure(Location base) {
-        // TODO - set this thing down in whatever direction the player is facing, instead of directly north or whatever
         World world = base.getWorld();
 
         for (int x = 0; x < portWidth; x++) {
@@ -120,7 +118,6 @@ public class PortPlacementListener implements Listener {
             }
         }
 
-        // Place controller block (used for redstone)
         Location buttonLoc = offsetByFacing(base, 0, 1, 0, facing);
         world.getBlockAt(buttonLoc).setType(Material.STONE_BUTTON);
     }

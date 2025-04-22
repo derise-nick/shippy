@@ -144,7 +144,7 @@ public class PortAndShipManager {
     public void activateAllShips() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             activeShips.forEach((s,v) -> moveDisplayShip(v));
-        },0L, 60L);
+        },0L, 1L);
     }
 
     public ActiveShip getActiveShipForArmorStand(ArmorStand stand) {
