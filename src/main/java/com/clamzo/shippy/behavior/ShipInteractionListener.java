@@ -41,16 +41,16 @@ public class ShipInteractionListener implements Listener {
 
     @EventHandler
     public void onPlayerUseShipItem(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
-
-        Player player = event.getPlayer();
-        ItemStack item = event.getItem();
-
-        if (item == null || item.getType() != Material.OAK_CHEST_BOAT) return;
-
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) return;
-        if (!meta.getDisplayName().equalsIgnoreCase("Your Custom Ship")) return;
+//        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
+//
+//        Player player = event.getPlayer();
+//        ItemStack item = event.getItem();
+//
+//        if (item == null || item.getType() != Material.OAK_CHEST_BOAT) return;
+//
+//        ItemMeta meta = item.getItemMeta();
+//        if (meta == null || !meta.hasDisplayName()) return;
+//        if (!meta.getDisplayName().equalsIgnoreCase("Your Custom Ship")) return;
 
         // Cancel the normal boat placement
 //        event.setCancelled(true);
@@ -74,7 +74,7 @@ public class ShipInteractionListener implements Listener {
 //        }
 
 //        item.setAmount(item.getAmount() - 1);
-        player.getInventory().setItemInMainHand(item);
+//        player.getInventory().setItemInMainHand(item);
     }
     @EventHandler
     public void onBoatCreated(VehicleCreateEvent event) {
@@ -96,13 +96,10 @@ public class ShipInteractionListener implements Listener {
 
             event.setCancelled(true);
 
-
-//            stand.addPassenger(nearest);
-
             // Load their ship structure
             List<SavedBlock> saved = manager.loadShipStructure(nearest.getUniqueId());
             if (saved == null || saved.isEmpty()) {
-                nearest.sendMessage(NamedTextColor.RED + "No saved ship found.");
+                nearest.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
                 return;
             }
             // Translate the SavedBlocks into placed blocks relative to boat location
@@ -122,33 +119,11 @@ public class ShipInteractionListener implements Listener {
             Display helmBlock = manager.getHelmBlock(displayList);
             // Register the active ship
             manager.addActiveShip(nearest, stand, displayList, helmBlock);
-            nearest.sendMessage(NamedTextColor.GREEN + "Ship deployed!");
+            nearest.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
             boat.remove();
 
         }, 1L); // delay 1 tick
-        // TODO: Make this actually prevent boat from spawning (not working because delayed by 1 tick)
     }
-
-
-
-//    @EventHandler
-//    public void onPlayerEnterBoat(VehicleEnterEvent event) {
-//        if (!(event.getEntered() instanceof Player player)) return;
-//        if (!(event.getVehicle() instanceof Boat boat)) return;
-//
-//        if (boat.getCustomName() == null || !boat.getCustomName().equals("Your Custom Ship")) return;
-//
-//        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-//            if (!boat.isValid() || !boat.getPassengers().contains(player)) return;
-//
-//            Vector direction = player.getLocation().getDirection().normalize().multiply(0.25);
-//
-//            ActiveShip ship = manager.getActiveShipForPlayerUUID(player.getUniqueId());
-//            player.sendRichMessage("Attempting to move ship");
-//
-//
-//        }, 0L, 2L); // 2 ticks = ~100ms
-//    }
 
     @EventHandler
     public void onInteractWithShip(PlayerInteractAtEntityEvent event) {
@@ -214,14 +189,16 @@ public class ShipInteractionListener implements Listener {
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
                 new Vector3f(0, 1.5f, 0),                    // Translation (relative offset)
-                new AxisAngle4f((float) Math.toRadians(180), 0, 1, 0),             // No rotation (yet)
+                new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
                 new Vector3f(1, 1, 1),                   // Scale = 1
                 new AxisAngle4f(0, 0, 0, 0)              // No rotation
         ));
 
         displays.add(helmView);
 
-        Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(0.5, 0.5, 0.5), EntityType.INTERACTION);
+        Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(0, 1, 0), EntityType.INTERACTION);
+        interaction.setInteractionHeight(1.5f);
+        interaction.setInteractionWidth(1.5f);
         interaction.setInvulnerable(true);
         interaction.setGravity(false);
         interaction.setPersistent(true);
