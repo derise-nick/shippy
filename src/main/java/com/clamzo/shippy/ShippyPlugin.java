@@ -24,13 +24,17 @@ public class ShippyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PortPlacementListener(this), this);
         getServer().getPluginManager().registerEvents(new ShipInteractionListener(this), this);
         manager.loadPortsFromDisk();
+        manager.loadActiveShips();
         manager.activateAllShips();
+
+
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Shippy plugin has been disabled.");
         manager.savePortsToDisk();
+        manager.saveActiveShips();
     }
 
     public PortAndShipManager getManager() {

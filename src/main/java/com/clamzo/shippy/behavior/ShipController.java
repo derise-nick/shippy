@@ -3,7 +3,6 @@ package com.clamzo.shippy.behavior;
 import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -65,7 +64,7 @@ public class ShipController {
         }
         Location predicted = loc.clone().add(velocity);
 
-        if (ShipPhysicsUtil.canMoveTo(predicted, loc, plugin.getManager().getActiveShipForArmorStand(shipSeat).getDisplayBlocks(), loc.getWorld())) {
+        if (ShipPhysicsUtil.canMoveTo(predicted, loc, plugin.getManager().getActiveShipForArmorStand(shipSeat).getEntities(), loc.getWorld())) {
             // Allow movement
             velocity.setY(0);
             shipSeat.setVelocity(velocity);

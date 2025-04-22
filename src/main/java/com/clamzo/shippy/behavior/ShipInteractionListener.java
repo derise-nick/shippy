@@ -5,15 +5,12 @@ import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
-import io.papermc.paper.math.Rotations;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
@@ -108,17 +105,17 @@ public class ShipInteractionListener implements Listener {
 
             
             ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation().clone().add(0,-1,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(false);
+            stand.setInvisible(true);
             stand.setMarker(false);
             stand.setGravity(true);
             stand.setInvulnerable(true);
             stand.setCustomName("ShipController");
             stand.setCustomNameVisible(false);
 
-            List<Display> displayList = spawnShipFromStructure(baseLoc, saved, stand);
-            Display helmBlock = manager.getHelmBlock(displayList);
+            List<Entity> entityList = spawnShipFromStructure(baseLoc, saved, stand);
+            Display helmBlock = manager.getHelmBlock(entityList);
             // Register the active ship
-            manager.addActiveShip(nearest, stand, displayList, helmBlock);
+            manager.addActiveShip(nearest, stand, entityList, helmBlock);
             nearest.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
             boat.remove();
 
@@ -127,8 +124,7 @@ public class ShipInteractionListener implements Listener {
 
     @EventHandler
     public void onInteractWithShip(PlayerInteractAtEntityEvent event) {
-//        if (!(event.getRightClicked() instanceof ItemDisplay item)) return;
-        Entity item = event.getRightClicked();
+        if (!(event.getRightClicked() instanceof Interaction item)) return;
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
         PersistentDataContainer container = item.getPersistentDataContainer();
 
@@ -151,8 +147,8 @@ public class ShipInteractionListener implements Listener {
     }
 
 
-    public List<Display> spawnShipFromStructure(Location origin, List<SavedBlock> structure, ArmorStand stand) {
-        List<Display> displays = new ArrayList<>();
+    public List<Entity> spawnShipFromStructure(Location origin, List<SavedBlock> structure, ArmorStand stand) {
+        List<Entity> entities = new ArrayList<>();
         World world = origin.getWorld();
 
         for (SavedBlock sb : structure) {
@@ -175,7 +171,7 @@ public class ShipInteractionListener implements Listener {
                     new AxisAngle4f(0, 0, 0, 0)              // No rotation
             ));
 
-            displays.add(display);
+            entities.add(display);
         }
         // Add helm directly above armor stand
         ItemStack helm = new ItemStack(Material.LECTERN, 1);
@@ -194,7 +190,7 @@ public class ShipInteractionListener implements Listener {
                 new AxisAngle4f(0, 0, 0, 0)              // No rotation
         ));
 
-        displays.add(helmView);
+        entities.add(helmView);
 
         Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(0, 1, 0), EntityType.INTERACTION);
         interaction.setInteractionHeight(1.5f);
@@ -205,8 +201,9 @@ public class ShipInteractionListener implements Listener {
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
         interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
         interaction.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_helm"), PersistentDataType.BYTE, (byte) 1);
+        entities.add(interaction);
 
-        return displays;
+        return entities;
     }
 
 //    @EventHandler
@@ -232,8 +229,8 @@ public class ShipInteractionListener implements Listener {
         ActiveShip ship = manager.getActiveShipForArmorStand(stand);
         if (ship == null) return;
 
-        for (Display display : ship.getDisplayBlocks()) {
-            display.remove();
+        for (Entity entity : ship.getEntities()) {
+            entity.remove();
         }
 
         manager.removeActiveShip(stand);
