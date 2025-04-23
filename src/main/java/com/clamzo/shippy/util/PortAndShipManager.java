@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 public class PortAndShipManager {
     private final ShippyPlugin plugin;
+    private final ShipSerializer serializer;
     File dataFolder;
     File dataFile;
     private final Map<UUID, Location> portLocations = new HashMap<>();
@@ -38,6 +39,7 @@ public class PortAndShipManager {
         }
         dataFile = new File(dataFolder, "ports.json");
         activeShipFile = new File(plugin.getDataFolder(), "active_ships.json");
+        this.serializer = new ShipSerializer(plugin);
     }
 
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -167,6 +169,10 @@ public class PortAndShipManager {
         Location base = stand.getLocation();
 
         for (Entity entity : entities) {
+            if (entity instanceof Interaction) {
+                entity.teleport(base.clone().add(-0.5, 1.5, 0));
+                continue;
+            }
             entity.teleport(base);
         }
     }
@@ -262,46 +268,7 @@ public class PortAndShipManager {
     }
 
     public ActiveShip deserializeActiveShip(SerializableActiveShip data) {
-        World world = Bukkit.getWorld(data.standLocation.getWorld().getUID());
-        if (world == null) return null;
-
-        // ArmorStand
-        ArmorStand stand = world.spawn(data.standLocation, ArmorStand.class, a -> {
-            a.setInvisible(true);
-            a.setGravity(true);
-            a.setMarker(true);
-        });
-
-        // BlockDisplays
-        List<Entity> displays = new ArrayList<>();
-        for (var s : data.entities) {
-            // TODO: Add these to a list and then use the spawn structure method from the interaction listener to ensure consistency
-//            if (s.itemStack != null) {
-//                ItemDisplay disp = world.spawn(s.location, ItemDisplay.class);
-//                disp.setItemStack(s.itemStack);
-//                disp.setTransformation(new Transformation(s.transformation, new Vector(), new Vector(1, 1, 1), new Vector()));
-//            } else if (s.transformation != null) {
-//                BlockDisplay disp = world.spawn(s.location, BlockDisplay.class);
-//                disp.setTransformation(new Transformation(s.transformation, new Vector(), new Vector(1, 1, 1), new Vector()));
-//            } else {
-//                Interaction disp = (Interaction) world.spawnEntity(s.location.clone().add(0, 1, 0), EntityType.INTERACTION);
-//                disp.setInteractionHeight(1.5f);
-//                disp.setInteractionWidth(1.5f);
-//            }
-//            displays.add(disp);
-        }
-
-        // HelmDisplay
-        var helm = data.helmEntity;
-        ItemDisplay helmDisp = world.spawn(helm.location, ItemDisplay.class);
-        helmDisp.setItemStack(helm.itemStack);
-        helmDisp.setTransformation(new Transformation(
-                new Vector3f(0, 1.5f, 0),                    // Translation (relative offset)
-                new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
-                new Vector3f(1, 1, 1),                   // Scale = 1
-                new AxisAngle4f(0, 0, 0, 0)              // No rotation
-        ));
-        return new ActiveShip(data.ownerId, stand, displays, helmDisp);
+        return serializer.deserializeShip(data);
     }
 
 }

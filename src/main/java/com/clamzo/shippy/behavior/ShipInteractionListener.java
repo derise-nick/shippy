@@ -101,11 +101,9 @@ public class ShipInteractionListener implements Listener {
             }
             // Translate the SavedBlocks into placed blocks relative to boat location
             Location baseLoc = boat.getLocation().getBlock().getLocation();
-            World world = boat.getWorld();
-
             
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation().clone().add(0,-1,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(true);
+            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,-0.5f,0), EntityType.ARMOR_STAND);
+            stand.setInvisible(false);
             stand.setMarker(false);
             stand.setGravity(true);
             stand.setInvulnerable(true);
@@ -155,7 +153,7 @@ public class ShipInteractionListener implements Listener {
             Location spawnLoc = stand.getLocation().clone();
 
             // Relative offset from boat
-            Vector offset = new Vector(sb.dx, sb.dy+1, sb.dz);
+            Vector offset = new Vector(sb.dx-0.5, sb.dy+1.5, sb.dz);
 
             // Spawn at the boat’s location
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
@@ -184,7 +182,7 @@ public class ShipInteractionListener implements Listener {
         helmView.setPersistent(true);
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
-                new Vector3f(0, 1.5f, 0),                    // Translation (relative offset)
+                new Vector3f(0, 2f, 0.5f),                    // Translation (relative offset)
                 new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
                 new Vector3f(1, 1, 1),                   // Scale = 1
                 new AxisAngle4f(0, 0, 0, 0)              // No rotation
@@ -192,7 +190,7 @@ public class ShipInteractionListener implements Listener {
 
         entities.add(helmView);
 
-        Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(0, 1, 0), EntityType.INTERACTION);
+        Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(-0.5, 1.5, 0), EntityType.INTERACTION);
         interaction.setInteractionHeight(1.5f);
         interaction.setInteractionWidth(1.5f);
         interaction.setInvulnerable(true);
