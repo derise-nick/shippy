@@ -82,7 +82,7 @@ public class ShipController {
 
         plugin.getLogger().info(velocity.toString());
 
-        if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat).getEntities(), shipSeat.getWorld())) {
+        if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat), shipSeat.getWorld())) {
             shipSeat.setVelocity(velocity);
         } else {
             velocity.zero();

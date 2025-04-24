@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.inventory.ItemStack;
@@ -74,6 +75,7 @@ public class ShipInteractionListener implements Listener {
 //        item.setAmount(item.getAmount() - 1);
 //        player.getInventory().setItemInMainHand(item);
     }
+
     @EventHandler
     public void onBoatCreated(VehicleCreateEvent event) {
         if (!(event.getVehicle() instanceof Boat boat)) return;
@@ -120,6 +122,51 @@ public class ShipInteractionListener implements Listener {
 
         }, 1L); // delay 1 tick
     }
+
+//    @EventHandler
+//    public void onPlayerMove(PlayerMoveEvent event) {
+//        Player player = event.getPlayer();
+//        ActiveShip ship = manager.getDeckForPlayer(player);
+//        if (ship == null) return;
+//
+//        // 1) read raw input
+//        Input in = player.getCurrentInput();
+//        Vector move = new Vector(0, 0, 0);
+//
+//        // 2) figure out the forward/left directions
+//        float yaw = player.getYaw(); // I want the player's yaw, not the ship for now.
+//        Vector forward = new Vector(
+//                -Math.sin(Math.toRadians(yaw)),
+//                0,
+//                Math.cos(Math.toRadians(yaw))
+//        );
+//        forward.normalize();
+//        Vector left = forward.clone().crossProduct(new Vector(0, 1, 0)).normalize();
+//
+//        // 3) accumulate input
+//        if (in.isForward())  move.add(forward);
+//        if (in.isBackward()) move.subtract(forward);
+//        if (in.isLeft())     move.subtract(left);
+//        if (in.isRight())    move.add(left);
+//
+//        // 4) normalize & scale walking speed
+//        if (move.lengthSquared() > 0) {
+//            move.normalize().multiply(0.15);  // ~0.15 blocks/tick ≈ 3 blocks/sec
+//        }
+//
+//        // 5) handle jumping
+//        if (in.isJump()) {
+//            move.setY(0.39);
+//        } else if (player.isInWater()){
+//            move.setY(0.06);
+//        } else {
+//            move.setY(0.09);;
+//        }
+//
+//        // 6) apply it
+//        player.setVelocity(move);
+//    }
+
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {

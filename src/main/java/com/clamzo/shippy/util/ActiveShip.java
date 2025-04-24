@@ -8,6 +8,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
 
 import java.util.List;
@@ -36,7 +37,11 @@ public class ActiveShip {
     public void updateBoundingBoxes() {
         Location standLocation = this.standEntity.getLocation();
         float yawDegrees = this.standEntity.getYaw();
-        cachedBoundingBoxes = entities.stream()
+        cachedBoundingBoxes = calculateBoundingBoxes(yawDegrees, standLocation);
+    }
+
+    public @NotNull List<BoundingBox> calculateBoundingBoxes(float yawDegrees, Location standLocation) {
+        return entities.stream()
                 .filter(e -> e instanceof BlockDisplay)
                 .map(e -> {
                     BlockDisplay display = (BlockDisplay) e;

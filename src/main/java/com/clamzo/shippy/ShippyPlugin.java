@@ -7,6 +7,7 @@ import com.clamzo.shippy.commands.CommandGivePort;
 import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.DebugVisualizer;
 import com.clamzo.shippy.util.PortAndShipManager;
+import com.clamzo.shippy.util.ShipPhysicsUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.bukkit.Bukkit;
@@ -18,6 +19,7 @@ public class ShippyPlugin extends JavaPlugin {
     private File dataFolder = getDataFolder();
     public PortAndShipManager manager;
     private DebugVisualizer debugVisualizer;
+    private ShipPhysicsUtil physicsUtil;
 
     @Override
     public void onEnable() {
@@ -31,6 +33,8 @@ public class ShippyPlugin extends JavaPlugin {
         manager.loadPortsFromDisk();
         manager.loadActiveShips();
         manager.activateAllShips();
+        physicsUtil = new ShipPhysicsUtil(this);
+        physicsUtil.activateDeckPhysics();
 
 
     }

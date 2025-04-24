@@ -223,12 +223,12 @@ public class PortAndShipManager {
         activeShipTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             activeShips.forEach((id,ship) -> {
                 moveDisplayShip(ship);
-                ArmorStand seat = ship.getStandEntity();
-                Vector shipVel = seat.getVelocity();
-                List<BoundingBox> deckBoxes =
-                        ShipPhysicsUtil.computeBoundingBoxes(seat.getLocation(), ship.getEntities());
-
-                // for every player in that world
+//                ArmorStand seat = ship.getStandEntity();
+//                Vector shipVel = seat.getVelocity();
+//                List<BoundingBox> deckBoxes = ship.getBoundingBoxes();
+//
+//
+//                // for every player in that world
 //                for (Player p : seat.getWorld().getPlayers()) {
 //                    // approximate foot position slightly below eye level
 //                    Vector footVec = p.getLocation().toVector().subtract(new org.bukkit.util.Vector(0, 0.1, 0));
@@ -302,6 +302,16 @@ public class PortAndShipManager {
                     && helmLoc.distanceSquared(location) < distanceThreshold * distanceThreshold) {
                 return ship;
             }
+        }
+        return null;
+    }
+
+    public ActiveShip getDeckForPlayer(@NotNull Player p) {
+        for (Map.Entry<UUID, ActiveShip> entry : activeShips.entrySet()) {
+            ActiveShip ship = entry.getValue();
+            Vector footVec = p.getLocation().toVector().subtract(new org.bukkit.util.Vector(0, 0.1, 0));
+            boolean onDeck = ship.getBoundingBoxes().stream().anyMatch(bb -> bb.contains(footVec));
+            if (onDeck) return ship;
         }
         return null;
     }
