@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -102,8 +103,8 @@ public class ShipInteractionListener implements Listener {
             // Translate the SavedBlocks into placed blocks relative to boat location
             Location baseLoc = boat.getLocation().getBlock().getLocation();
             
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,-0.5f,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(false);
+            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,1.5f,0), EntityType.ARMOR_STAND);
+            stand.setInvisible(true);
             stand.setMarker(false);
             stand.setGravity(true);
             stand.setInvulnerable(true);
@@ -121,6 +122,14 @@ public class ShipInteractionListener implements Listener {
     }
 
     @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (!player.isInsideVehicle() || !(player.getVehicle() instanceof ArmorStand)) return;
+        plugin.getLogger().info("Player logged off while on armor stand.");
+        player.getVehicle().removePassenger(player);
+    }
+
+    @EventHandler
     public void onInteractWithShip(PlayerInteractAtEntityEvent event) {
         if (!(event.getRightClicked() instanceof Interaction item)) return;
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
@@ -135,12 +144,14 @@ public class ShipInteractionListener implements Listener {
 
         ArmorStand stand = (ArmorStand) Bukkit.getEntity(armorStandUUID);
         if (stand == null) return;
+        if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.STICK)) manager.removeActiveShipForArmorStand(stand);
 
         ActiveShip ship = manager.getActiveShipForArmorStand(stand);
         if (ship == null) return;
 
         Player player = event.getPlayer();
         stand.addPassenger(player);
+        player.setRotation(stand.getYaw(), player.getPitch());
         player.sendMessage(Component.text("Aye aye, Captain!").color(NamedTextColor.GREEN));
     }
 
@@ -204,34 +215,11 @@ public class ShipInteractionListener implements Listener {
         return entities;
     }
 
-//    @EventHandler
-//    public void onBoatDestroyed(VehicleDestroyEvent event) {
-//        if (!(event.getVehicle() instanceof ArmorStand stand)) return;
-//
-//        if (stand.getCustomName() == null || !stand.getCustomName().equals("ShipController")) return;
-//
-//        ActiveShip ship = manager.getActiveShipForBoat(stand);
-//        if (ship == null) return;
-//
-//        for (BlockDisplay display : ship.getDisplayBlocks()) {
-//            display.remove();
-//        }
-//
-//        manager.removeActiveShip(stand);
-//    }
 
-    @EventHandler
+//    @EventHandler
     public void onArmorStandRemoved(EntityRemoveFromWorldEvent event) {
         if (!(event.getEntity() instanceof ArmorStand stand)) return;
-
-        ActiveShip ship = manager.getActiveShipForArmorStand(stand);
-        if (ship == null) return;
-
-        for (Entity entity : ship.getEntities()) {
-            entity.remove();
-        }
-
-        manager.removeActiveShip(stand);
+        manager.removeActiveShipForArmorStand(stand);
     }
 
 

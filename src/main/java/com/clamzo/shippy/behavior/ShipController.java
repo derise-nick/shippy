@@ -1,6 +1,7 @@
 package com.clamzo.shippy.behavior;
 
 import com.clamzo.shippy.ShippyPlugin;
+import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
@@ -13,21 +14,21 @@ import java.util.Optional;
 public class ShipController {
     private Vector velocity = new Vector(0, 0, 0);
     private final ArmorStand shipSeat;
-    private final double acceleration = 0.04;
-    private final double maxSpeed = 0.8;
-    private final double minSpeed = -0.05;
-    private final double drag = 0.91;
-    private final double turnSpeed = 3.5; // degrees per tick
+    private final ActiveShip ship;
+    private final double acceleration = 0.004;
+    private final double maxSpeed = 1;
+    private final double drag = 0.98;
+    private final double turnSpeed = 2.5; // degrees per tick
 
-    public ShipController(ArmorStand seat) {
-        this.shipSeat = seat;
-        // TODO: Remove plugin after debugging
+    public ShipController(ActiveShip ship) {
+        this.shipSeat = ship.getStandEntity();
+        this.ship = ship;
         this.plugin = JavaPlugin.getPlugin(ShippyPlugin.class);
     }
 
     private final ShippyPlugin plugin;
     public void tick() {
-
+        ship.updateBoundingBoxes();
         Location loc = shipSeat.getLocation();
 
         float yaw = loc.getYaw();
@@ -61,14 +62,17 @@ public class ShipController {
         shipSeat.setRotation(yaw, shipSeat.getPitch());
         if (forward && !backward) {
             Vector dir = loc.getDirection().normalize();
+//            plugin.getLogger().info(dir.clone().multiply(acceleration).toString());
             velocity.add(dir.multiply(acceleration));
         } else if (backward && !forward) {
             Vector dir = loc.getDirection().normalize();
             velocity.subtract(dir.multiply(acceleration*0.2));
+        } else {
+            // Apply drag
+            velocity.multiply(drag);
         }
 
-        // Apply drag
-        velocity.multiply(drag);
+
 
         // Clamp speed
         if (velocity.length() > maxSpeed) {
@@ -76,7 +80,8 @@ public class ShipController {
         }
         Location predicted = loc.clone().add(velocity);
 
-// can we move there?
+        plugin.getLogger().info(velocity.toString());
+
         if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat).getEntities(), shipSeat.getWorld())) {
             shipSeat.setVelocity(velocity);
         } else {

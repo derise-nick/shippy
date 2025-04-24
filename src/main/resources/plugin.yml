@@ -7,3 +7,6 @@ commands:
   givePort:
     description: Your description
     usage: /givePort
+  shipdebug:
+    description: Your description
+    usage: /shipdebug
