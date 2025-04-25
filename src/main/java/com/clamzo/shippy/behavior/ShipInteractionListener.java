@@ -5,17 +5,16 @@ import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
-import io.papermc.paper.math.Rotations;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -26,9 +25,7 @@ import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class ShipInteractionListener implements Listener {
     private final PortAndShipManager manager;
@@ -76,6 +73,7 @@ public class ShipInteractionListener implements Listener {
 //        item.setAmount(item.getAmount() - 1);
 //        player.getInventory().setItemInMainHand(item);
     }
+
     @EventHandler
     public void onBoatCreated(VehicleCreateEvent event) {
         if (!(event.getVehicle() instanceof Boat boat)) return;
@@ -104,62 +102,132 @@ public class ShipInteractionListener implements Listener {
             }
             // Translate the SavedBlocks into placed blocks relative to boat location
             Location baseLoc = boat.getLocation().getBlock().getLocation();
-            World world = boat.getWorld();
 
-            
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(boat.getLocation().clone().add(0,-1,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(false);
+            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,1.5f,0), EntityType.ARMOR_STAND);
+            stand.setInvisible(true);
             stand.setMarker(false);
             stand.setGravity(true);
             stand.setInvulnerable(true);
             stand.setCustomName("ShipController");
             stand.setCustomNameVisible(false);
 
-            List<Display> displayList = spawnShipFromStructure(baseLoc, saved, stand);
-            Display helmBlock = manager.getHelmBlock(displayList);
-            // Register the active ship
-            manager.addActiveShip(nearest, stand, displayList, helmBlock);
-            nearest.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
+            spawnShipFromStructure(baseLoc, saved, stand, nearest);
             boat.remove();
 
         }, 1L); // delay 1 tick
     }
 
+//    @EventHandler
+//    public void onPlayerMove(PlayerMoveEvent event) {
+//        Player player = event.getPlayer();
+//        ActiveShip ship = manager.getDeckForPlayer(player);
+//        if (ship == null) return;
+//
+//        // 1) read raw input
+//        Input in = player.getCurrentInput();
+//        Vector move = new Vector(0, 0, 0);
+//
+//        // 2) figure out the forward/left directions
+//        float yaw = player.getYaw(); // I want the player's yaw, not the ship for now.
+//        Vector forward = new Vector(
+//                -Math.sin(Math.toRadians(yaw)),
+//                0,
+//                Math.cos(Math.toRadians(yaw))
+//        );
+//        forward.normalize();
+//        Vector left = forward.clone().crossProduct(new Vector(0, 1, 0)).normalize();
+//
+//        // 3) accumulate input
+//        if (in.isForward())  move.add(forward);
+//        if (in.isBackward()) move.subtract(forward);
+//        if (in.isLeft())     move.subtract(left);
+//        if (in.isRight())    move.add(left);
+//
+//        // 4) normalize & scale walking speed
+//        if (move.lengthSquared() > 0) {
+//            move.normalize().multiply(0.15);  // ~0.15 blocks/tick ≈ 3 blocks/sec
+//        }
+//
+//        // 5) handle jumping
+//        if (in.isJump()) {
+//            move.setY(0.39);
+//        } else if (player.isInWater()){
+//            move.setY(0.06);
+//        } else {
+//            move.setY(0.09);;
+//        }
+//
+//        // 6) apply it
+//        player.setVelocity(move);
+//    }
+
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (!player.isInsideVehicle() || !(player.getVehicle() instanceof ArmorStand)) return;
+        player.getVehicle().removePassenger(player);
+    }
+
     @EventHandler
     public void onInteractWithShip(PlayerInteractAtEntityEvent event) {
-//        if (!(event.getRightClicked() instanceof ItemDisplay item)) return;
-        Entity item = event.getRightClicked();
+        if (!(event.getRightClicked() instanceof Interaction item)) return;
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
+        NamespacedKey displayKey = new NamespacedKey(plugin, "display_uuid");
         PersistentDataContainer container = item.getPersistentDataContainer();
 
-        if (!container.has(helmKey, PersistentDataType.STRING)) return;
+        if (container.has(displayKey, PersistentDataType.STRING)) {
+            Entity refEntity = Bukkit.getEntity(UUID.fromString(container.get(displayKey, PersistentDataType.STRING)));
+            if (refEntity instanceof BlockDisplay block) {
+                switch (block.getBlock().getMaterial()) {
+                    case Material.DISPENSER:
+                        item.getWorld().spawnEntity(item.getLocation(), EntityType.FIREBALL);
+                        break;
+                    case Material.BARREL:
+                        plugin.getLogger().info("Barrel accessed!");
+                        if (container.has(helmKey, PersistentDataType.STRING)) {
+                            plugin.getLogger().info("Barrel has helmKey!");
+                            ArmorStand stand = (ArmorStand) Bukkit.getEntity(UUID.fromString(
+                                container.get(helmKey, PersistentDataType.STRING)));
+                            if (stand == null) return;
+                            plugin.getLogger().info("Barrel armor stand found!");
+                            ActiveShip ship = manager.getActiveShipForArmorStand(stand);
+                            plugin.getLogger().info("Opening barrel for ship: " + ship.getOwnerId());
+                            event.getPlayer().openInventory(ship.getInventory());
+                        }
+                        break;
+                }
+            }
+        } else if (container.has(helmKey, PersistentDataType.STRING)) {
+            String uuidString = container.get(helmKey, PersistentDataType.STRING);
+            UUID armorStandUUID = UUID.fromString(uuidString);
 
-        String uuidString = container.get(helmKey, PersistentDataType.STRING);
-        UUID armorStandUUID = UUID.fromString(uuidString);
+            ArmorStand stand = (ArmorStand) Bukkit.getEntity(armorStandUUID);
+            if (stand == null) return;
+            if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.STICK)) manager.removeActiveShipForArmorStand(stand);
 
-        plugin.getLogger().info("Armor stand key: " + armorStandUUID);
+            ActiveShip ship = manager.getActiveShipForArmorStand(stand);
+            if (ship == null) return;
 
-        ArmorStand stand = (ArmorStand) Bukkit.getEntity(armorStandUUID);
-        if (stand == null) return;
-
-        ActiveShip ship = manager.getActiveShipForArmorStand(stand);
-        if (ship == null) return;
-
-        Player player = event.getPlayer();
-        stand.addPassenger(player);
-        player.sendMessage(Component.text("Aye aye, Captain!").color(NamedTextColor.GREEN));
+            Player player = event.getPlayer();
+            stand.addPassenger(player);
+            player.setRotation(stand.getYaw(), player.getPitch());
+            player.sendMessage(Component.text("Aye aye, Captain!").color(NamedTextColor.GREEN));
+        }
     }
 
 
-    public List<Display> spawnShipFromStructure(Location origin, List<SavedBlock> structure, ArmorStand stand) {
-        List<Display> displays = new ArrayList<>();
+    public void spawnShipFromStructure(Location origin, List<SavedBlock> structure, ArmorStand stand, Player nearestPlayer) {
+        List<Entity> entities = new ArrayList<>();
+        Map<UUID, BlockDisplay> interactions = new HashMap<>();
         World world = origin.getWorld();
+        ItemDisplay helmView = (ItemDisplay) world.spawnEntity(stand.getLocation(), EntityType.ITEM_DISPLAY);
 
         for (SavedBlock sb : structure) {
             Location spawnLoc = stand.getLocation().clone();
 
             // Relative offset from boat
-            Vector offset = new Vector(sb.dx, sb.dy+1, sb.dz);
+            Vector offset = new Vector(sb.dx-0.5, sb.dy+1.5, sb.dz);
 
             // Spawn at the boat’s location
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
@@ -175,68 +243,66 @@ public class ShipInteractionListener implements Listener {
                     new AxisAngle4f(0, 0, 0, 0)              // No rotation
             ));
 
-            displays.add(display);
+            entities.add(display);
+            Material dispMat = sb.getBlockData().getMaterial();
+            if (dispMat.equals(Material.DISPENSER) || dispMat.equals(Material.BARREL)) {
+                interactions.put(display.getUniqueId(), display);
+            }
         }
         // Add helm directly above armor stand
         ItemStack helm = new ItemStack(Material.LECTERN, 1);
         ItemMeta helmMeta = helm.getItemMeta();
         helmMeta.setCustomModelData(313);
         helm.setItemMeta(helmMeta);
-        ItemDisplay helmView = (ItemDisplay) world.spawnEntity(stand.getLocation(), EntityType.ITEM_DISPLAY);
         helmView.setItemStack(helm);
 
         helmView.setPersistent(true);
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
-                new Vector3f(0, 1.5f, 0),                    // Translation (relative offset)
+                new Vector3f(0, 2f, 0.5f),                    // Translation (relative offset)
                 new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
                 new Vector3f(1, 1, 1),                   // Scale = 1
                 new AxisAngle4f(0, 0, 0, 0)              // No rotation
         ));
 
-        displays.add(helmView);
+        entities.add(helmView);
 
-        Interaction interaction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(0, 1, 0), EntityType.INTERACTION);
-        interaction.setInteractionHeight(1.5f);
-        interaction.setInteractionWidth(1.5f);
-        interaction.setInvulnerable(true);
-        interaction.setGravity(false);
-        interaction.setPersistent(true);
+        Interaction helmInteraction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(-0.5, 1.5, 0), EntityType.INTERACTION);
+        helmInteraction.setInteractionHeight(1.5f);
+        helmInteraction.setInteractionWidth(1.5f);
+        helmInteraction.setInvulnerable(true);
+        helmInteraction.setGravity(false);
+        helmInteraction.setPersistent(true);
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
-        interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
-        interaction.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_helm"), PersistentDataType.BYTE, (byte) 1);
+        helmInteraction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
+        helmInteraction.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_helm"), PersistentDataType.BYTE, (byte) 1);
+        entities.add(helmInteraction);
 
-        return displays;
+        interactions.forEach((uid,display) -> {
+            Interaction interaction = (Interaction) world.spawnEntity(display.getLocation(), EntityType.INTERACTION);
+            interaction.setInteractionHeight(1f);
+            interaction.setInteractionWidth(1f);
+            interaction.setInvulnerable(true);
+            interaction.setGravity(false);
+            interaction.setPersistent(true);
+            NamespacedKey dispId = new NamespacedKey(plugin, "display_uuid");
+            interaction.getPersistentDataContainer().set(dispId, PersistentDataType.STRING, display.getUniqueId().toString());
+            interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
+            entities.add(interaction);
+        });
+
+
+        // Register the active ship
+        manager.addActiveShip(nearestPlayer, stand, entities, interactions);
+        nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
 
-//    @EventHandler
-//    public void onBoatDestroyed(VehicleDestroyEvent event) {
-//        if (!(event.getVehicle() instanceof ArmorStand stand)) return;
-//
-//        if (stand.getCustomName() == null || !stand.getCustomName().equals("ShipController")) return;
-//
-//        ActiveShip ship = manager.getActiveShipForBoat(stand);
-//        if (ship == null) return;
-//
-//        for (BlockDisplay display : ship.getDisplayBlocks()) {
-//            display.remove();
-//        }
-//
-//        manager.removeActiveShip(stand);
-//    }
 
-    @EventHandler
+
+//    @EventHandler
     public void onArmorStandRemoved(EntityRemoveFromWorldEvent event) {
         if (!(event.getEntity() instanceof ArmorStand stand)) return;
-
-        ActiveShip ship = manager.getActiveShipForArmorStand(stand);
-        if (ship == null) return;
-
-        for (Display display : ship.getDisplayBlocks()) {
-            display.remove();
-        }
-
-        manager.removeActiveShip(stand);
+        manager.removeActiveShipForArmorStand(stand);
     }
 
 

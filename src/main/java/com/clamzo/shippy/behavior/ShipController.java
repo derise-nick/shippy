@@ -1,9 +1,9 @@
 package com.clamzo.shippy.behavior;
 
 import com.clamzo.shippy.ShippyPlugin;
+import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,21 +14,25 @@ import java.util.Optional;
 public class ShipController {
     private Vector velocity = new Vector(0, 0, 0);
     private final ArmorStand shipSeat;
-    private final double acceleration = 0.04;
-    private final double maxSpeed = 0.8;
-    private final double drag = 0.91;
-    private final double turnSpeed = 3.5; // degrees per tick
+    private final ActiveShip ship;
+    private final double acceleration = 0.004;
+    private final double maxSpeed = 1;
+    private final double drag = 0.98;
+    private final double turnSpeed = 2.5; // degrees per tick
 
-    public ShipController(ArmorStand seat) {
-        this.shipSeat = seat;
-        // TODO: Remove plugin after debugging
+    private double angularVelocity;
+
+    public ShipController(ActiveShip ship) {
+        this.shipSeat = ship.getStandEntity();
+        this.ship = ship;
         this.plugin = JavaPlugin.getPlugin(ShippyPlugin.class);
     }
 
     private final ShippyPlugin plugin;
     public void tick() {
-
+        ship.updateBoundingBoxes();
         Location loc = shipSeat.getLocation();
+        angularVelocity = 0;
 
         float yaw = loc.getYaw();
         Optional<Player> playerPass = shipSeat.getPassengers().stream().filter(pas -> pas instanceof Player).map(pas -> (Player) pas).findFirst();
@@ -40,24 +44,36 @@ public class ShipController {
             return;
         }
 
-        Player player = playerPass.get();
-        boolean forward = player.getCurrentInput().isForward();
+        Player driver = playerPass.get();
+        boolean forward = driver.getCurrentInput().isForward();
+        boolean backward = driver.getCurrentInput().isBackward();
 
         // Turning
-        if (player.getCurrentInput().isLeft()) yaw -= turnSpeed;
-        if (player.getCurrentInput().isRight()) yaw += turnSpeed;
+        if (driver.getCurrentInput().isLeft()) {
+            yaw -= turnSpeed;  // turnSpeed is a constant 2.5
+            driver.setRotation(driver.getYaw() - (float) turnSpeed, driver.getPitch());
+            angularVelocity = Math.toRadians(turnSpeed);
+        }
+        if (driver.getCurrentInput().isRight()) {
+            yaw += turnSpeed;
+            driver.setRotation(driver.getYaw() + (float) turnSpeed, driver.getPitch());
+            angularVelocity = 0-Math.toRadians(turnSpeed);
+        }
 
         loc.setYaw(yaw);
 
         // Forward movement
         shipSeat.setRotation(yaw, shipSeat.getPitch());
-        if (forward) {
+        if (forward && !backward) {
             Vector dir = loc.getDirection().normalize();
             velocity.add(dir.multiply(acceleration));
+        } else if (backward && !forward) {
+            Vector dir = loc.getDirection().normalize();
+            velocity.subtract(dir.multiply(acceleration*0.2));
+        } else {
+            // Apply drag
+            velocity.multiply(drag);
         }
-
-        // Apply drag
-        velocity.multiply(drag);
 
         // Clamp speed
         if (velocity.length() > maxSpeed) {
@@ -65,15 +81,16 @@ public class ShipController {
         }
         Location predicted = loc.clone().add(velocity);
 
-        if (ShipPhysicsUtil.canMoveTo(predicted, loc, plugin.getManager().getActiveShipForArmorStand(shipSeat).getDisplayBlocks(), loc.getWorld())) {
-            // Allow movement
-            velocity.setY(0);
+        if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat), shipSeat.getWorld())) {
             shipSeat.setVelocity(velocity);
         } else {
-            // Cancel movement
             velocity.zero();
             shipSeat.setVelocity(new Vector(0, 0, 0));
         }
 
+    }
+
+    public double getAngularVelocity() {
+        return angularVelocity;
     }
 }

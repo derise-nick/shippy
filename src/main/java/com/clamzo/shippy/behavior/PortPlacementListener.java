@@ -13,6 +13,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -223,12 +224,12 @@ public class PortPlacementListener implements Listener {
     public void onRedstoneChange(BlockRedstoneEvent event) {
         // TODO: Check on changing event to right-click sign
         if (event.getNewCurrent() == 0) return;
-        Block block = event.getBlock();
-        if (block.getType() != Material.STONE_BUTTON) return;
+        Block button = event.getBlock();
+        if (button.getType() != Material.STONE_BUTTON) return;
 
         Map<UUID, Location> portLocs = this.manager.getPortLocations();
 
-        Location loc = block.getLocation().clone().add(0,-1,0);
+        Location loc = button.getLocation().clone().add(0,-1,0);
 
         if (portLocs.containsValue(loc)) {
             UUID owner = portLocs.entrySet().stream()
@@ -289,12 +290,12 @@ public class PortPlacementListener implements Listener {
                             if (isCorner) continue;
 
                             Location saveLoc = offsetByFacing(base, x, y, z, getCardinalFacing(boatOwner));
-                            Material type = saveLoc.getBlock().getType();
-
-                            if (type == Material.AIR || type == Material.LODESTONE) continue; // Skip empty and helm
+                            Block block = saveLoc.getBlock();
+                            BlockData bd = block.getBlockData().clone();
+                            if (bd.getMaterial() == Material.AIR || bd.getMaterial() == Material.LODESTONE) continue; // Skip empty and helm
 
                             Vector rel = saveLoc.toVector().subtract(helmVector);
-                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), Bukkit.createBlockData(type));
+                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), bd);
                             shipBlocks.add(sb);
                         }
                     }
