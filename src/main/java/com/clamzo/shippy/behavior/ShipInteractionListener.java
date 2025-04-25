@@ -4,7 +4,6 @@ import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
@@ -170,10 +169,10 @@ public class ShipInteractionListener implements Listener {
         helmView.setPersistent(true);
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
-                new Vector3f(0, 2f, 0.5f),                    // Translation (relative offset)
-                new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
-                new Vector3f(1, 1, 1),                   // Scale = 1
-                new AxisAngle4f(0, 0, 0, 0)              // No rotation
+                new Vector3f(0, 2f, 0.5f),
+                new AxisAngle4f(0, 0, 1, 0),
+                new Vector3f(1, 1, 1),
+                new AxisAngle4f(0, 0, 0, 0)
         ));
 
         entities.add(helmView);
@@ -202,20 +201,8 @@ public class ShipInteractionListener implements Listener {
             entities.add(interaction);
         });
 
-
         // Register the active ship
         manager.addActiveShip(nearestPlayer, stand, entities, interactions);
         nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
-
-
-
-    @EventHandler
-    public void onArmorStandRemoved(EntityRemoveFromWorldEvent event) {
-        if (!(event.getEntity() instanceof ArmorStand stand)) return;
-        manager.removeActiveShipForArmorStand(stand);
-    }
-
-
-
 }
