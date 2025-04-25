@@ -60,9 +60,9 @@ public class ShipInteractionListener implements Listener {
                 return;
             }
             // Translate the SavedBlocks into placed blocks relative to boat location
-            Location baseLoc = boat.getLocation().getBlock().getLocation();
+            Location baseLoc = boat.getLocation();
 
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,1.5f,0), EntityType.ARMOR_STAND);
+            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,0.5f,0), EntityType.ARMOR_STAND);
             stand.setInvisible(true);
             stand.setMarker(false);
             stand.setGravity(true);
