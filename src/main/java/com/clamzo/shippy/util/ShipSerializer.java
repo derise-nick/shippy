@@ -9,6 +9,7 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
+import org.jetbrains.annotations.NotNull;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
@@ -37,7 +38,7 @@ public class ShipSerializer {
         });
 
         // BlockDisplays
-        List<Entity> displays = new ArrayList<>();
+        List<Entity> entities = new ArrayList<>();
         Map<UUID,BlockDisplay> cannons = new HashMap<>();
         for (var s : data.entities) {
             switch (s.entityType) {
@@ -47,7 +48,7 @@ public class ShipSerializer {
                     itemDisp.setTransformation(new Transformation(s.transformation, new AxisAngle4f(), new Vector3f(1, 1, 1), new AxisAngle4f()));
                     itemDisp.setPersistent(true);
                     itemDisp.setTeleportDuration(3);
-                    displays.add(itemDisp);
+                    entities.add(itemDisp);
                     break;
                 case EntityType.BLOCK_DISPLAY:
                     BlockDisplay blockDisp = (BlockDisplay) world.spawnEntity(s.location, EntityType.BLOCK_DISPLAY);
@@ -55,8 +56,12 @@ public class ShipSerializer {
                     blockDisp.setBlock(Bukkit.createBlockData(s.blockData));
                     blockDisp.setPersistent(true);
                     blockDisp.setTeleportDuration(3);
-                    displays.add(blockDisp);
-                    if (blockDisp.getBlock().getMaterial().equals(Material.DISPENSER)) cannons.put(blockDisp.getUniqueId(),blockDisp);
+                    entities.add(blockDisp);
+                    if (blockDisp.getBlock().getMaterial().equals(Material.DISPENSER) || blockDisp.getBlock().getMaterial().equals(Material.BARREL)) {
+                        Interaction interaction = getInteraction(world, blockDisp, stand);
+                        cannons.put(blockDisp.getUniqueId(), blockDisp);
+                        entities.add(interaction);
+                    }
                     break;
                 case EntityType.INTERACTION:
                     Interaction interaction = (Interaction) world.spawnEntity(s.location.clone().add(-0.5, 1.5, 0), EntityType.INTERACTION);
@@ -68,35 +73,45 @@ public class ShipSerializer {
                     NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
                     interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
                     interaction.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_helm"), PersistentDataType.BYTE, (byte) 1);
-                    displays.add(interaction);
+                    entities.add(interaction);
             }
         }
 
-        return new ActiveShip(stand.getUniqueId(), stand, displays, cannons);
+        return new ActiveShip(stand.getUniqueId(), stand, entities, cannons);
+    }
+
+    private @NotNull Interaction getInteraction(World world, BlockDisplay blockDisp, ArmorStand stand) {
+        Interaction interaction = (Interaction) world.spawnEntity(blockDisp.getLocation(), EntityType.INTERACTION);
+        interaction.setInteractionHeight(1f);
+        interaction.setInteractionWidth(1f);
+        interaction.setInvulnerable(true);
+        interaction.setGravity(false);
+        interaction.setPersistent(true);
+        NamespacedKey dispId = new NamespacedKey(plugin, "display_uuid");
+        NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
+        interaction.getPersistentDataContainer().set(dispId, PersistentDataType.STRING, blockDisp.getUniqueId().toString());
+        interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
+        return interaction;
     }
 
     public SerializableActiveShip serializeShip(ActiveShip ship) {
         List<SerializableActiveShip.SerializedEntity> displays = ship.getEntities().stream().map(d -> {
-            switch (d.getType()) {
-
-                case EntityType.BLOCK_DISPLAY:
-                    return new SerializableActiveShip.SerializedEntity(
-                            d.getLocation(),
-                            ((BlockDisplay) d).getTransformation().getTranslation(),
-                            ((BlockDisplay) d).getBlock()
-                    );
-                case EntityType.ITEM_DISPLAY:
-                    return new SerializableActiveShip.SerializedEntity(
-                            d.getLocation(),
-                            ((ItemDisplay) d).getItemStack(),
-                            ((ItemDisplay) d).getTransformation().getTranslation()
-                    );
-                default:
-                    return new SerializableActiveShip.SerializedEntity(
+            return switch (d.getType()) {
+                case EntityType.BLOCK_DISPLAY -> new SerializableActiveShip.SerializedEntity(
+                        d.getLocation(),
+                        ((BlockDisplay) d).getTransformation().getTranslation(),
+                        ((BlockDisplay) d).getBlock()
+                );
+                case EntityType.ITEM_DISPLAY -> new SerializableActiveShip.SerializedEntity(
+                        d.getLocation(),
+                        ((ItemDisplay) d).getItemStack(),
+                        ((ItemDisplay) d).getTransformation().getTranslation()
+                );
+                default -> new SerializableActiveShip.SerializedEntity(
                         d.getLocation(),
                         d.getType()
-                    );
-            }
+                );
+            };
         }).collect(Collectors.toList());
 
         return new SerializableActiveShip(
