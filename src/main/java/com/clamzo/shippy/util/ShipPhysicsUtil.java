@@ -31,34 +31,51 @@ public class ShipPhysicsUtil {
      * any solid blocks in the world.
      */
     public static boolean canMoveTo(Location futureAnchor, ActiveShip ship, World world) {
-        // 1) build the AABBs at the future anchor
-//        List<Entity> entities = ship.getEntities();
-//        List<BoundingBox> boxes = computeBoundingBoxes(futureAnchor, entities);
+        List<OrientedBoundingBox> obbs =
+                ship.calculateOBBs(futureAnchor.getYaw(), futureAnchor);
 
-        List<BoundingBox> boxes = ship.calculateBoundingBoxes(futureAnchor.getYaw(), futureAnchor);
+        for (OrientedBoundingBox obb : obbs) {
+            // Test only the 8 corners of each box
+            for (Vector corner : obb.getCorners()) {
+                int bx = corner.getBlockX();
+                int by = corner.getBlockY();
+                int bz = corner.getBlockZ();
 
-        // 2) test each AABB against the world
-        for (BoundingBox box : boxes) {
-            int minX = (int) Math.floor(box.getMinX());
-            int maxX = (int) Math.ceil (box.getMaxX());
-            int minY = (int) Math.floor(box.getMinY());
-            int maxY = (int) Math.ceil (box.getMaxY());
-            int minZ = (int) Math.floor(box.getMinZ());
-            int maxZ = (int) Math.ceil (box.getMaxZ());
-
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        Block block = world.getBlockAt(x, y, z);
-                        if (!block.isPassable() && block.getType().isSolid()) {
-                            return false;
-                        }
-                    }
+                Block block = world.getBlockAt(bx, by, bz);
+                if (!block.isPassable() && block.getType().isSolid()) {
+                    return false;
                 }
             }
         }
         return true;
     }
+
+//    public static boolean canMoveTo(Location futureAnchor, ActiveShip ship, World world) {
+//
+//        List<OrientedBoundingBox> boxes = ship.calculateOBBs(futureAnchor.getYaw(), futureAnchor);
+//
+//        // 2) test each OBB against the world
+//        for (OrientedBoundingBox box : boxes) {
+//            int minX = (int) Math.floor(box.getMinX());
+//            int maxX = (int) Math.ceil (box.getMaxX());
+//            int minY = (int) Math.floor(box.getMinY());
+//            int maxY = (int) Math.ceil (box.getMaxY());
+//            int minZ = (int) Math.floor(box.getMinZ());
+//            int maxZ = (int) Math.ceil (box.getMaxZ());
+//
+//            for (int x = minX; x <= maxX; x++) {
+//                for (int y = minY; y <= maxY; y++) {
+//                    for (int z = minZ; z <= maxZ; z++) {
+//                        Block block = world.getBlockAt(x, y, z);
+//                        if (!block.isPassable() && block.getType().isSolid()) {
+//                            return false;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        return true;
+//    }
 
     /**
      * Compute an axis‐aligned bounding box for each Display entity,
@@ -131,8 +148,21 @@ public class ShipPhysicsUtil {
                 }
 
                 motion.add(ship.getStandEntity().getVelocity());
+                // ——— ship turning “centrifugal” push ———
 
-                // Finally, apply velocity
+                // Calculate angular velocity of rotating ship and move accordingly
+                double omega = ship.getController().getAngularVelocity();
+                if (omega != 0) {
+                    Vector offset = player.getLocation().toVector()
+                            .subtract(ship.getStandEntity().getLocation().toVector());
+                    Vector tangential = new Vector(
+                            offset.getZ() * omega,
+                            0,
+                            -offset.getX() * omega
+                    );
+                    motion.add(tangential);
+                }
+
                 player.setVelocity(motion);
             }
         }, 0L, 1L);

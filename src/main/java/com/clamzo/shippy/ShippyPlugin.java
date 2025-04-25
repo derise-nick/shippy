@@ -35,8 +35,6 @@ public class ShippyPlugin extends JavaPlugin {
         manager.activateAllShips();
         physicsUtil = new ShipPhysicsUtil(this);
         physicsUtil.activateDeckPhysics();
-
-
     }
 
     @Override

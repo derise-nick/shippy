@@ -2,9 +2,10 @@ package com.clamzo.shippy.util;
 
 import com.clamzo.shippy.ShippyPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.block.data.BlockData;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -12,8 +13,7 @@ import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ShipSerializer {
@@ -39,6 +39,7 @@ public class ShipSerializer {
 
         // BlockDisplays
         List<Entity> displays = new ArrayList<>();
+        Map<UUID,BlockDisplay> cannons = new HashMap<>();
         for (var s : data.entities) {
             switch (s.entityType) {
                 case EntityType.ITEM_DISPLAY:
@@ -56,6 +57,7 @@ public class ShipSerializer {
                     blockDisp.setPersistent(true);
                     blockDisp.setTeleportDuration(3);
                     displays.add(blockDisp);
+                    if (blockDisp.getBlock().getMaterial().equals(Material.DISPENSER)) cannons.put(blockDisp.getUniqueId(),blockDisp);
                     break;
                 case EntityType.INTERACTION:
                     Interaction interaction = (Interaction) world.spawnEntity(s.location.clone().add(-0.5, 1.5, 0), EntityType.INTERACTION);
@@ -71,7 +73,7 @@ public class ShipSerializer {
             }
         }
 
-        return new ActiveShip(stand.getUniqueId(), stand, displays);
+        return new ActiveShip(stand.getUniqueId(), stand, displays, cannons);
     }
 
     public SerializableActiveShip serializeShip(ActiveShip ship) {

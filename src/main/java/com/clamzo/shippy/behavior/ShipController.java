@@ -20,6 +20,8 @@ public class ShipController {
     private final double drag = 0.98;
     private final double turnSpeed = 2.5; // degrees per tick
 
+    private double angularVelocity;
+
     public ShipController(ActiveShip ship) {
         this.shipSeat = ship.getStandEntity();
         this.ship = ship;
@@ -30,6 +32,7 @@ public class ShipController {
     public void tick() {
         ship.updateBoundingBoxes();
         Location loc = shipSeat.getLocation();
+        angularVelocity = 0;
 
         float yaw = loc.getYaw();
         Optional<Player> playerPass = shipSeat.getPassengers().stream().filter(pas -> pas instanceof Player).map(pas -> (Player) pas).findFirst();
@@ -41,20 +44,21 @@ public class ShipController {
             return;
         }
 
-        Player player = playerPass.get();
-        boolean forward = player.getCurrentInput().isForward();
-        boolean backward = player.getCurrentInput().isBackward();
+        Player driver = playerPass.get();
+        boolean forward = driver.getCurrentInput().isForward();
+        boolean backward = driver.getCurrentInput().isBackward();
 
         // Turning
-        if (player.getCurrentInput().isLeft()) {
-            yaw -= turnSpeed;
-            player.setRotation(player.getYaw() - (float) turnSpeed, player.getPitch());
+        if (driver.getCurrentInput().isLeft()) {
+            yaw -= turnSpeed;  // turnSpeed is a constant 2.5
+            driver.setRotation(driver.getYaw() - (float) turnSpeed, driver.getPitch());
+            angularVelocity = Math.toRadians(turnSpeed);
         }
-        if (player.getCurrentInput().isRight()) {
+        if (driver.getCurrentInput().isRight()) {
             yaw += turnSpeed;
-            player.setRotation(player.getYaw() + (float) turnSpeed, player.getPitch());
+            driver.setRotation(driver.getYaw() + (float) turnSpeed, driver.getPitch());
+            angularVelocity = 0-Math.toRadians(turnSpeed);
         }
-
 
         loc.setYaw(yaw);
 
@@ -62,7 +66,6 @@ public class ShipController {
         shipSeat.setRotation(yaw, shipSeat.getPitch());
         if (forward && !backward) {
             Vector dir = loc.getDirection().normalize();
-//            plugin.getLogger().info(dir.clone().multiply(acceleration).toString());
             velocity.add(dir.multiply(acceleration));
         } else if (backward && !forward) {
             Vector dir = loc.getDirection().normalize();
@@ -72,15 +75,11 @@ public class ShipController {
             velocity.multiply(drag);
         }
 
-
-
         // Clamp speed
         if (velocity.length() > maxSpeed) {
             velocity = velocity.normalize().multiply(maxSpeed);
         }
         Location predicted = loc.clone().add(velocity);
-
-        plugin.getLogger().info(velocity.toString());
 
         if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat), shipSeat.getWorld())) {
             shipSeat.setVelocity(velocity);
@@ -89,5 +88,9 @@ public class ShipController {
             shipSeat.setVelocity(new Vector(0, 0, 0));
         }
 
+    }
+
+    public double getAngularVelocity() {
+        return angularVelocity;
     }
 }

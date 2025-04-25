@@ -6,19 +6,16 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.data.BlockData;
+import org.bukkit.*;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Directional;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
 import java.io.*;
@@ -153,7 +150,6 @@ public class PortAndShipManager {
     }
 
     public void addShipForUser(final UUID owner, List<SavedBlock> shipBlocks) {
-        // Optional: Save to file under owner's UUID
         try (FileWriter writer = new FileWriter(new File(dataFolder, owner.toString() + "_ship.json"))) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             gson.toJson(shipBlocks, writer);
@@ -195,23 +191,71 @@ public class PortAndShipManager {
         ship.getController().tick();
         ArmorStand stand = ship.getStandEntity();
         List<Entity> entities = ship.getEntities();
+        List<Interaction> cannonInteractions = new ArrayList<>();
+        List<BlockDisplay> barrels = new ArrayList<>();
 
         // Base location = boat position
         Location base = stand.getLocation();
 
         for (Entity entity : entities) {
-            if (entity instanceof Interaction) {
-                entity.teleport(base.clone().add(-0.5, 1.5, 0));
+
+            if (entity instanceof Interaction interaction) {
+                NamespacedKey helmFlag = new NamespacedKey(plugin, "is_helm");
+                PersistentDataContainer container = entity.getPersistentDataContainer();
+                if (container.has(helmFlag, PersistentDataType.BYTE)) {
+                    entity.teleport(base.clone().add(-0.5, 1.5, 0));
+                    continue;
+                }
+                addBoundInteraction(ship, interaction, stand);
+//                cannonInteractions.add((Interaction) entity);
                 continue;
             }
             entity.teleport(base);
         }
+
+    }
+
+    private void addBoundInteraction(ActiveShip ship, Interaction interaction, ArmorStand stand) {
+        NamespacedKey displayId = new NamespacedKey(plugin, "display_uuid");
+        PersistentDataContainer container = interaction.getPersistentDataContainer();
+        String id = container.get(displayId, PersistentDataType.STRING);
+        BlockDisplay blockDisp = ship.getCannons().get(UUID.fromString(id));
+
+        Vector3f t = blockDisp.getTransformation().getTranslation();
+        Vector localOffset = new Vector(t.x()+0.5, t.y(), t.z()+0.5);
+
+        float standYaw = stand.getLocation().getYaw();
+        double rad = Math.toRadians(standYaw);
+        double cos = Math.cos(rad), sin = Math.sin(rad);
+        Vector rotatedOffset = new Vector(
+                localOffset.getX() * cos - localOffset.getZ() * sin,
+                localOffset.getY(),
+                localOffset.getX() * sin + localOffset.getZ() * cos
+        );
+
+        Location target = stand.getLocation().clone().add(rotatedOffset);
+
+        Directional dir = (Directional) blockDisp.getBlock();
+        BlockFace face = dir.getFacing();
+        float faceYaw;
+        switch (face) {
+            case SOUTH: faceYaw =   0f; break;
+            case WEST:  faceYaw =  90f; break;
+            case NORTH: faceYaw = 180f; break;
+            case EAST:  faceYaw = -90f; break;
+            default:    faceYaw =    0f; break;
+        }
+
+        target.setYaw(standYaw + faceYaw);
+        target.setPitch(0f);
+
+        interaction.teleport(target);
     }
 
 
-    public void addActiveShip(Player player, ArmorStand standEntity, List<Entity> entities, Display helmBlock) {
+    public void addActiveShip(Player player, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
         if (standEntity == null) return;
-        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, entities);
+        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, entities, cannons);
         activeShips.put(player.getUniqueId(), ship);
     }
 
@@ -264,14 +308,14 @@ public class PortAndShipManager {
         activeShips.remove(id);
     }
 
-    public Display getHelmBlock(List<Entity> displayList) {
-        for (Entity entity : displayList) {
-            if (entity instanceof ItemDisplay && ((ItemDisplay) entity).getItemStack().getType() == Material.COMPASS) {
-                return (ItemDisplay) entity;
-            }
-        }
-        return null;
-    }
+//    public Display getHelmBlock(List<Entity> displayList) {
+//        for (Entity entity : displayList) {
+//            if (entity instanceof ItemDisplay && ((ItemDisplay) entity).getItemStack().getType() == Material.COMPASS) {
+//                return (ItemDisplay) entity;
+//            }
+//        }
+//        return null;
+//    }
 
     public SerializableActiveShip serializeActiveShip(ActiveShip ship) {
         SerializableActiveShip shi = serializer.serializeShip(ship);
