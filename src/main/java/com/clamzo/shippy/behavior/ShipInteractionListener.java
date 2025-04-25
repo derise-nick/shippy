@@ -4,16 +4,13 @@ import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.inventory.ItemStack;
@@ -34,44 +31,6 @@ public class ShipInteractionListener implements Listener {
     public ShipInteractionListener(ShippyPlugin plugin) {
         this.manager = plugin.manager;
         this.plugin = plugin;
-    }
-
-    @EventHandler
-    public void onPlayerUseShipItem(PlayerInteractEvent event) {
-//        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
-//
-//        Player player = event.getPlayer();
-//        ItemStack item = event.getItem();
-//
-//        if (item == null || item.getType() != Material.OAK_CHEST_BOAT) return;
-//
-//        ItemMeta meta = item.getItemMeta();
-//        if (meta == null || !meta.hasDisplayName()) return;
-//        if (!meta.getDisplayName().equalsIgnoreCase("Your Custom Ship")) return;
-
-        // Cancel the normal boat placement
-//        event.setCancelled(true);
-
-//        Location base = player.getLocation().add(player.getLocation().getDirection().multiply(2)).getBlock().getLocation();
-
-        // Check and load their saved ship
-//        List<SavedBlock> ship = manager.loadShipStructure(player.getUniqueId());
-//        if (ship == null || ship.isEmpty()) {
-//            player.sendMessage(NamedTextColor.RED + "No saved ship found.");
-//            return;
-//        }
-//        List<Block> shipBlocks = new ArrayList<Block>();
-//
-//        // Paste the ship at the new location
-//        for (SavedBlock saved : ship) {
-//            World world = base.getWorld();
-//            Location loc = base.clone().add(saved.dx, saved.dy, saved.dz);
-//            world.getBlockAt(loc).setType(Material.valueOf(saved.material));
-//            shipBlocks.add(world.getBlockAt(loc));
-//        }
-
-//        item.setAmount(item.getAmount() - 1);
-//        player.getInventory().setItemInMainHand(item);
     }
 
     @EventHandler
@@ -114,54 +73,9 @@ public class ShipInteractionListener implements Listener {
             spawnShipFromStructure(baseLoc, saved, stand, nearest);
             boat.remove();
 
-        }, 1L); // delay 1 tick
+        }, 1L);
     }
-
-//    @EventHandler
-//    public void onPlayerMove(PlayerMoveEvent event) {
-//        Player player = event.getPlayer();
-//        ActiveShip ship = manager.getDeckForPlayer(player);
-//        if (ship == null) return;
-//
-//        // 1) read raw input
-//        Input in = player.getCurrentInput();
-//        Vector move = new Vector(0, 0, 0);
-//
-//        // 2) figure out the forward/left directions
-//        float yaw = player.getYaw(); // I want the player's yaw, not the ship for now.
-//        Vector forward = new Vector(
-//                -Math.sin(Math.toRadians(yaw)),
-//                0,
-//                Math.cos(Math.toRadians(yaw))
-//        );
-//        forward.normalize();
-//        Vector left = forward.clone().crossProduct(new Vector(0, 1, 0)).normalize();
-//
-//        // 3) accumulate input
-//        if (in.isForward())  move.add(forward);
-//        if (in.isBackward()) move.subtract(forward);
-//        if (in.isLeft())     move.subtract(left);
-//        if (in.isRight())    move.add(left);
-//
-//        // 4) normalize & scale walking speed
-//        if (move.lengthSquared() > 0) {
-//            move.normalize().multiply(0.15);  // ~0.15 blocks/tick ≈ 3 blocks/sec
-//        }
-//
-//        // 5) handle jumping
-//        if (in.isJump()) {
-//            move.setY(0.39);
-//        } else if (player.isInWater()){
-//            move.setY(0.06);
-//        } else {
-//            move.setY(0.09);;
-//        }
-//
-//        // 6) apply it
-//        player.setVelocity(move);
-//    }
-
-
+    
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
@@ -184,15 +98,11 @@ public class ShipInteractionListener implements Listener {
                         item.getWorld().spawnEntity(item.getLocation(), EntityType.FIREBALL);
                         break;
                     case Material.BARREL:
-                        plugin.getLogger().info("Barrel accessed!");
                         if (container.has(helmKey, PersistentDataType.STRING)) {
-                            plugin.getLogger().info("Barrel has helmKey!");
                             ArmorStand stand = (ArmorStand) Bukkit.getEntity(UUID.fromString(
                                 container.get(helmKey, PersistentDataType.STRING)));
                             if (stand == null) return;
-                            plugin.getLogger().info("Barrel armor stand found!");
                             ActiveShip ship = manager.getActiveShipForArmorStand(stand);
-                            plugin.getLogger().info("Opening barrel for ship: " + ship.getOwnerId());
                             event.getPlayer().openInventory(ship.getInventory());
                         }
                         break;
@@ -259,10 +169,10 @@ public class ShipInteractionListener implements Listener {
         helmView.setPersistent(true);
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
-                new Vector3f(0, 2f, 0.5f),                    // Translation (relative offset)
-                new AxisAngle4f(0, 0, 1, 0),             // No rotation (yet)
-                new Vector3f(1, 1, 1),                   // Scale = 1
-                new AxisAngle4f(0, 0, 0, 0)              // No rotation
+                new Vector3f(0, 2f, 0.5f),
+                new AxisAngle4f(0, 0, 1, 0),
+                new Vector3f(1, 1, 1),
+                new AxisAngle4f(0, 0, 0, 0)
         ));
 
         entities.add(helmView);
@@ -291,48 +201,8 @@ public class ShipInteractionListener implements Listener {
             entities.add(interaction);
         });
 
-
         // Register the active ship
         manager.addActiveShip(nearestPlayer, stand, entities, interactions);
         nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
-
-
-
-//    @EventHandler
-    public void onArmorStandRemoved(EntityRemoveFromWorldEvent event) {
-        if (!(event.getEntity() instanceof ArmorStand stand)) return;
-        manager.removeActiveShipForArmorStand(stand);
-    }
-
-
-//    private void moveShip(ActiveShip ship, Vector movement, Player player) {
-//        List<Block> currentBlocks = ship.getBlocks();
-//
-//        // Save current block states
-//        List<Material> materials = currentBlocks.stream()
-//                .map(Block::getType).toList();
-//
-//        // Clear old blocks
-//        currentBlocks.forEach(b -> b.setType(Material.AIR));
-//        currentBlocks.forEach(b -> player.sendRichMessage(b.toString()));
-//
-//        // Calculate new positions
-//        List<Block> newBlocks = new ArrayList<>();
-//        for (Block oldBlock : currentBlocks) {
-//            Location newLoc = oldBlock.getLocation().add(movement);
-//            Block newBlock = newLoc.getBlock();
-//            newBlocks.add(newBlock);
-//        }
-//
-//        // Set new blocks
-//        for (int i = 0; i < newBlocks.size(); i++) {
-//            newBlocks.get(i).setType(materials.get(i));
-//        }
-//
-//        // Update state
-//        ship.setBlocks(newBlocks);
-//    }
-
-
 }

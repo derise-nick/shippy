@@ -1,10 +1,5 @@
 package com.clamzo.shippy.behavior;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.ArrayList;
-
 import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
@@ -25,13 +20,18 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 public class PortPlacementListener implements Listener {
     private final int portWidth = 8;
     private final int portLength = 12;
     private final int portHeight = 8;
 
     // TODO: Make the port work with whoever hit the button
-    // TODO: Fix the facing of the ports when they aren't facing south
+    // TODO: Fix the buttons to work facing-agnostically
     // TODO: Trigger from sign use instead of button
 
     private BlockFace facing = BlockFace.NORTH;
@@ -142,87 +142,8 @@ public class PortPlacementListener implements Listener {
         }
     }
 
-//    @EventHandler
-//    public void onRedstoneChange(BlockRedstoneEvent event) {
-//        // TODO: Check on changing event to right-click sign
-//        if (event.getNewCurrent() == 0) return;
-//        Block block = event.getBlock();
-//        if (block.getType() != Material.STONE_BUTTON) return;
-//
-//        Map<UUID, Location> portLocs = this.manager.getPortLocations();
-//
-//        Location loc = block.getLocation().clone().add(0,-1,0);
-//
-//        if (portLocs.containsValue(loc)) {
-//            UUID owner = portLocs.entrySet().stream()
-//                    .filter(entry -> entry.getValue().equals(loc))
-//                    .map(Map.Entry::getKey)
-//                    .findFirst()
-//                    .orElse(null);
-//            for (World wor:Bukkit.getWorlds()) {
-//                for (Player p : wor.getPlayers()) {
-//                    p.sendMessage(loc.toString());
-//                }
-//            }
-//            if (owner != null && Bukkit.getPlayer(owner) != null) {
-//                Player boatOwner = Bukkit.getPlayer(owner);
-//                boatOwner.sendMessage(NamedTextColor.AQUA + "Ship saved!");
-//                Location base = manager.getPortLocations().get(owner);
-//                if (base == null) return;
-//
-//                List<SavedBlock> shipBlocks = new ArrayList<>();
-//
-//                int helmCount = 0;
-//                SavedBlock helmBlock = null;
-//
-//                for (int x = 0; x < portWidth; x++) {
-//                    for (int y = 1; y < portHeight; y++) {
-//                        for (int z = 0; z < portLength; z++) {
-//                            // Skip corner blocks
-//                            boolean isCorner =
-//                                    (x == 0 || x == portWidth - 1) &&
-//                                            (z == 0 || z == portLength - 1);
-//                            if (isCorner) continue;
-//
-//                            Location saveLoc = offsetByFacing(base, x, y, z, getCardinalFacing(boatOwner));
-//                            Material type = saveLoc.getBlock().getType();
-//
-//                            if (type == Material.LODESTONE) {
-//                                helmCount++;
-//                            }
-//
-//                            if (type != Material.AIR) {
-//                                SavedBlock sb = new SavedBlock(x-portWidth/2, y, z-portLength/2, Bukkit.createBlockData(type));
-//                                shipBlocks.add(sb);
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                if (helmCount == 0) {
-//                    boatOwner.sendMessage(Component.text("Your ship must have exactly one LODESTONE block to act as a helm.").color(NamedTextColor.RED));
-//                    return;
-//                } else if (helmCount > 1) {
-//                    boatOwner.sendMessage(Component.text("Your ship has multiple helm blocks. Please leave only one LODESTONE.").color(NamedTextColor.RED));
-//                    return;
-//                }
-//
-//                manager.addShipForUser(owner, shipBlocks);
-//
-//                ItemStack shipItem = new ItemStack(Material.OAK_CHEST_BOAT);
-//                ItemMeta meta = shipItem.getItemMeta();
-//                meta.setDisplayName("Your Custom Ship");
-//
-//                meta.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, owner.toString() + "_ship");
-//
-//                shipItem.setItemMeta(meta);
-//                boatOwner.getInventory().addItem(shipItem);
-//            }
-//        }
-//    }
     @EventHandler
     public void onRedstoneChange(BlockRedstoneEvent event) {
-        // TODO: Check on changing event to right-click sign
         if (event.getNewCurrent() == 0) return;
         Block button = event.getBlock();
         if (button.getType() != Material.STONE_BUTTON) return;
@@ -308,7 +229,7 @@ public class PortPlacementListener implements Listener {
                 ItemMeta meta = shipItem.getItemMeta();
                 meta.setDisplayName("Your Custom Ship");
 
-                meta.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, owner.toString() + "_ship");
+                meta.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, owner + "_ship");
 
                 shipItem.setItemMeta(meta);
                 boatOwner.getInventory().addItem(shipItem);
