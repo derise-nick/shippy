@@ -10,9 +10,10 @@ import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -34,46 +35,36 @@ public class ShipInteractionListener implements Listener {
     }
 
     @EventHandler
-    public void onBoatCreated(VehicleCreateEvent event) {
-        if (!(event.getVehicle() instanceof Boat boat)) return;
-
+    public void onShipPlaced(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        NamespacedKey shipKey = new NamespacedKey(plugin, "ship_id");
+        if (!item.getPersistentDataContainer().has(shipKey, PersistentDataType.STRING)) return;
         // Delay one tick to allow data to catch up (item used, etc.)
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // Check if the boat has a name (only our custom ships do)
-            if (boat.getCustomName() == null || !boat.getCustomName().equals("Your Custom Ship")) return;
+        plugin.getLogger().info(item.getPersistentDataContainer().get(shipKey, PersistentDataType.STRING));
+        UUID shipId = UUID.fromString(item.getPersistentDataContainer().get(shipKey, PersistentDataType.STRING));
 
-            // Find a nearby player (within 3 blocks) to associate with this boat
-            Player nearest = boat.getWorld().getNearbyEntities(boat.getLocation(), 3, 3, 3).stream()
-                    .filter(e -> e instanceof Player)
-                    .map(e -> (Player) e)
-                    .findFirst()
-                    .orElse(null);
+        event.setCancelled(true);
 
-            if (nearest == null) return;
+        // Load their ship structure
+        List<SavedBlock> saved = manager.loadShipStructure(shipId);
+        if (saved == null || saved.isEmpty()) {
+            player.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
+            return;
+        }
+        // Translate the SavedBlocks into placed blocks relative to boat location
+        Location baseLoc = event.getClickedBlock().getLocation();
 
-            event.setCancelled(true);
+        ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(baseLoc.clone().add(0, 0.5f, 0), EntityType.ARMOR_STAND);
+        stand.setInvisible(true);
+        stand.setMarker(false);
+        stand.setGravity(true);
+        stand.setInvulnerable(true);
+        stand.setCustomName("ShipController");
+        stand.setCustomNameVisible(false);
 
-            // Load their ship structure
-            List<SavedBlock> saved = manager.loadShipStructure(nearest.getUniqueId());
-            if (saved == null || saved.isEmpty()) {
-                nearest.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
-                return;
-            }
-            // Translate the SavedBlocks into placed blocks relative to boat location
-            Location baseLoc = boat.getLocation();
-
-            ArmorStand stand = (ArmorStand) boat.getWorld().spawnEntity(baseLoc.clone().add(0,0.5f,0), EntityType.ARMOR_STAND);
-            stand.setInvisible(true);
-            stand.setMarker(false);
-            stand.setGravity(true);
-            stand.setInvulnerable(true);
-            stand.setCustomName("ShipController");
-            stand.setCustomNameVisible(false);
-
-            spawnShipFromStructure(baseLoc, saved, stand, nearest);
-            boat.remove();
-
-        }, 1L);
+        spawnShipFromStructure(baseLoc, saved, stand, player);
     }
     
     @EventHandler

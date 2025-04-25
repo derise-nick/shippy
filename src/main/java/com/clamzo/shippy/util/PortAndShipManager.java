@@ -6,6 +6,7 @@ import com.clamzo.shippy.serialization.Vector3fAdapter;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -151,11 +152,11 @@ public class PortAndShipManager {
         }
     }
 
-    public void addShipForUser(final UUID owner, List<SavedBlock> shipBlocks) {
-        try (FileWriter writer = new FileWriter(new File(dataFolder, owner.toString() + "_ship.json"))) {
+    public void addShipForUser(final UUID shipId, List<SavedBlock> shipBlocks, Player player) {
+        try (FileWriter writer = new FileWriter(new File(dataFolder, shipId.toString() + "_ship.json"))) {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             gson.toJson(shipBlocks, writer);
-            Bukkit.getPlayer(owner).sendMessage(NamedTextColor.GREEN + "Ship structure saved!");
+            player.sendMessage(Component.text("Ship structure saved!").color(NamedTextColor.GREEN));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -164,11 +165,11 @@ public class PortAndShipManager {
     public Map<UUID, Location> getShipStructures() {
         return shipStructures;
     }
-    public Map<UUID, Location> getPortLocations() {
+    public Map<UUID, Location> getShipyardLocations() {
         return portLocations;
     }
 
-    public void addPortLocation(UUID playerId, Location loc) {
+    public void addShipyardLocation(UUID playerId, Location loc) {
         portLocations.put(playerId, loc);
     }
 
