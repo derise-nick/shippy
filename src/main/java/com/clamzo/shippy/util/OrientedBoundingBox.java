@@ -25,13 +25,10 @@ public class OrientedBoundingBox {
 
     /** Test whether a world-space point lies inside this OBB. */
     public boolean contains(Vector worldPoint) {
-        // 1) translate into box-local coords
         Vector rel = worldPoint.clone().subtract(center);
-        // 2) inverse-rotate around Y by –yaw
         double localX =  rel.getX() * cosYaw + rel.getZ() * sinYaw;
         double localY =  rel.getY();
         double localZ = -rel.getX() * sinYaw + rel.getZ() * cosYaw;
-        // 3) test axis-aligned
         return  Math.abs(localX) <= halfExtents.getX()
                 && Math.abs(localY) <= halfExtents.getY()
                 && Math.abs(localZ) <= halfExtents.getZ();

@@ -4,19 +4,15 @@ import com.clamzo.shippy.behavior.PortPlacementListener;
 import com.clamzo.shippy.behavior.ShipInteractionListener;
 import com.clamzo.shippy.commands.CommandDebugShip;
 import com.clamzo.shippy.commands.CommandGivePort;
-import com.clamzo.shippy.util.ActiveShip;
 import com.clamzo.shippy.util.DebugVisualizer;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 
 public class ShippyPlugin extends JavaPlugin {
-    private File dataFolder = getDataFolder();
+    private final File dataFolder = getDataFolder();
     public PortAndShipManager manager;
     private DebugVisualizer debugVisualizer;
     private ShipPhysicsUtil physicsUtil;

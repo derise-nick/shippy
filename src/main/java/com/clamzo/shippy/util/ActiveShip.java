@@ -4,7 +4,6 @@ import com.clamzo.shippy.behavior.ShipController;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
@@ -28,7 +27,7 @@ public class ActiveShip implements InventoryHolder {
     private final ShipController controller;
     private @NotNull List<OrientedBoundingBox> cachedBoundingBoxes;
     private final Map<UUID, BlockDisplay> cannons;
-    private Inventory inventory;
+    private final Inventory inventory;
 
     public ActiveShip(UUID ownerId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
         this.ownerId = ownerId;

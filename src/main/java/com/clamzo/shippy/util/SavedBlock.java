@@ -12,11 +12,11 @@ public class SavedBlock {
         this.dx = x;
         this.dy = y;
         this.dz = z;
-        this.blockData = data.getAsString(); // Save full block data string
+        this.blockData = data.getAsString();
     }
 
     public BlockData getBlockData() {
-        return Bukkit.createBlockData(blockData); // Reconstruct it safely
+        return Bukkit.createBlockData(blockData);
     }
 
     public Location applyTo(Location origin) {

@@ -1,16 +1,19 @@
 package com.clamzo.shippy.util;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.serialization.*;
+import com.clamzo.shippy.serialization.LocationAdapter;
+import com.clamzo.shippy.serialization.Vector3fAdapter;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.*;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
@@ -45,7 +48,6 @@ public class PortAndShipManager {
         this.serializer = new ShipSerializer(plugin);
         shipGson = new GsonBuilder()
                 .registerTypeAdapter(Location.class,   new LocationAdapter())
-                .registerTypeAdapter(ItemStack.class, new ItemStackAdapter())
                 .registerTypeAdapter(Vector3f.class, new Vector3fAdapter())
                 .setPrettyPrinting()
                 .create();
@@ -92,7 +94,7 @@ public class PortAndShipManager {
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to load active ships: " + e.getMessage());
         }
-        plugin.getLogger().info("Active Ships: " + activeShips.toString());
+        plugin.getLogger().info("Active Ships: " + activeShips);
     }
 
     private void debugJsonFailure(SerializableActiveShip.SerializedEntity obj) {
@@ -207,7 +209,6 @@ public class PortAndShipManager {
                     continue;
                 }
                 addBoundInteraction(ship, interaction, stand);
-//                cannonInteractions.add((Interaction) entity);
                 continue;
             }
             entity.teleport(base);
@@ -267,27 +268,6 @@ public class PortAndShipManager {
         activeShipTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             activeShips.forEach((id,ship) -> {
                 moveDisplayShip(ship);
-//                ArmorStand seat = ship.getStandEntity();
-//                Vector shipVel = seat.getVelocity();
-//                List<BoundingBox> deckBoxes = ship.getBoundingBoxes();
-//
-//
-//                // for every player in that world
-//                for (Player p : seat.getWorld().getPlayers()) {
-//                    // approximate foot position slightly below eye level
-//                    Vector footVec = p.getLocation().toVector().subtract(new org.bukkit.util.Vector(0, 0.1, 0));
-//
-//                    // if any box contains their foot
-//                    boolean onDeck = deckBoxes.stream().anyMatch(bb -> bb.contains(footVec));
-//                    if (onDeck) {
-//                        // cancel any downward fall
-//                        Vector v = p.getVelocity();
-//                        v.setX(shipVel.getX());
-//                        v.setZ(shipVel.getZ());
-//                        if (v.getY() < 0) v.setY(0);
-//                        p.setVelocity(v);
-//                    }
-//                }
             });
         },0L, 1L);
     }
@@ -307,15 +287,6 @@ public class PortAndShipManager {
         }
         activeShips.remove(id);
     }
-
-//    public Display getHelmBlock(List<Entity> displayList) {
-//        for (Entity entity : displayList) {
-//            if (entity instanceof ItemDisplay && ((ItemDisplay) entity).getItemStack().getType() == Material.COMPASS) {
-//                return (ItemDisplay) entity;
-//            }
-//        }
-//        return null;
-//    }
 
     public SerializableActiveShip serializeActiveShip(ActiveShip ship) {
         SerializableActiveShip shi = serializer.serializeShip(ship);
