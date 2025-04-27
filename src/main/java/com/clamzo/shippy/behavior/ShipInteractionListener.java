@@ -7,6 +7,7 @@ import com.clamzo.shippy.util.SavedBlock;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,24 +38,28 @@ public class ShipInteractionListener implements Listener {
     @EventHandler
     public void onShipPlaced(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Block clickedBlock = event.getClickedBlock();
+        if (clickedBlock == null) return;
+
+        Material type = clickedBlock.getType();
+
+        if (!(type == Material.WATER || type == Material.KELP || type == Material.SEAGRASS || type == Material.BUBBLE_COLUMN)) return;
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         NamespacedKey shipKey = new NamespacedKey(plugin, "ship_id");
         if (!item.getPersistentDataContainer().has(shipKey, PersistentDataType.STRING)) return;
-        // Delay one tick to allow data to catch up (item used, etc.)
-        plugin.getLogger().info(item.getPersistentDataContainer().get(shipKey, PersistentDataType.STRING));
-        UUID shipId = UUID.fromString(item.getPersistentDataContainer().get(shipKey, PersistentDataType.STRING));
 
+        UUID shipId = UUID.fromString(item.getPersistentDataContainer().get(shipKey, PersistentDataType.STRING));
         event.setCancelled(true);
 
         // Load their ship structure
-        List<SavedBlock> saved = manager.loadShipStructure(shipId);
+        List<SavedBlock> saved = manager.getShipStructure(shipId);
         if (saved == null || saved.isEmpty()) {
             player.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
             return;
         }
         // Translate the SavedBlocks into placed blocks relative to boat location
-        Location baseLoc = event.getClickedBlock().getLocation();
+        Location baseLoc = clickedBlock.getLocation();
 
         ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(baseLoc.clone().add(0, 0.5f, 0), EntityType.ARMOR_STAND);
         stand.setInvisible(true);
@@ -175,7 +180,8 @@ public class ShipInteractionListener implements Listener {
         helmInteraction.setGravity(false);
         helmInteraction.setPersistent(true);
         NamespacedKey helmKey = new NamespacedKey(plugin, "ship_armorstand_uuid");
-        helmInteraction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
+        UUID standId = stand.getUniqueId();
+        helmInteraction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, standId.toString());
         helmInteraction.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_helm"), PersistentDataType.BYTE, (byte) 1);
         entities.add(helmInteraction);
 
@@ -188,12 +194,12 @@ public class ShipInteractionListener implements Listener {
             interaction.setPersistent(true);
             NamespacedKey dispId = new NamespacedKey(plugin, "display_uuid");
             interaction.getPersistentDataContainer().set(dispId, PersistentDataType.STRING, display.getUniqueId().toString());
-            interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, stand.getUniqueId().toString());
+            interaction.getPersistentDataContainer().set(helmKey, PersistentDataType.STRING, standId.toString());
             entities.add(interaction);
         });
 
         // Register the active ship
-        manager.addActiveShip(nearestPlayer, stand, entities, interactions);
+        manager.addActiveShip(standId, stand, entities, interactions);
         nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
 }

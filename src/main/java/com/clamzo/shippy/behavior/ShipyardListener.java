@@ -113,8 +113,14 @@ public class ShipyardListener implements Listener {
                     .orElse(null);
             if (nearestPlayer != null) {
                 nearestPlayer.sendMessage(Component.text("Ship saved!").color(NamedTextColor.AQUA));
-                Location base = manager.getShipyardLocations().get(nearestPlayer.getUniqueId());
-                plugin.getLogger().info("Player ID: " + nearestPlayer.getUniqueId() + " | Base: " + base);
+                Location base = null;
+                for (Location shipyard: manager.getShipyardLocations().values()){
+                    plugin.getLogger().info("Shipyard: " + shipyard);
+                    if (shipyard.equals(event.getBlock().getLocation().clone().add(0,-1,0))) {
+                        base = shipyard;
+                    }
+                }
+                plugin.getLogger().info("Loc: " + event.getBlock().getLocation() + " | Base: " + base);
                 if (base == null) return;
 
                 List<SavedBlock> shipBlocks = new ArrayList<>();
@@ -172,10 +178,9 @@ public class ShipyardListener implements Listener {
 
                 UUID shipId = UUID.randomUUID();
                 // Preventing duplicates
-                while (this.manager.loadShipStructure(shipId).contains(shipId)) {
+                while (!this.manager.getShipStructure(shipId).isEmpty()) {
                     shipId = UUID.randomUUID();
                 }
-                plugin.getLogger().info("Listener: "+shipId);
                 manager.addShipForUser(shipId, shipBlocks, nearestPlayer);
 
                 ItemStack shipItem = new ItemStack(Material.OAK_CHEST_BOAT);

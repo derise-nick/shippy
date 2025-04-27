@@ -31,6 +31,8 @@ public class ShippyPlugin extends JavaPlugin {
         manager.loadPortsFromDisk();
         manager.loadActiveShips();
         manager.activateAllShips();
+        manager.loadAllShips();
+        manager.startAutoSaveTask(this, 20L * 300L);
         physicsUtil = new ShipPhysicsUtil(this);
         physicsUtil.activateDeckPhysics();
     }
@@ -38,8 +40,10 @@ public class ShippyPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("Shippy plugin has been disabled.");
+        manager.stopTasks();
         manager.savePortsToDisk();
         manager.saveActiveShips();
+        manager.saveAllShips();
     }
 
     public PortAndShipManager getManager() {

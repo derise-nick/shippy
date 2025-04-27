@@ -17,6 +17,7 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.entity.*;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +38,8 @@ public class PortAndShipManager {
     private final Map<UUID, Location> shipStructures = new HashMap<>();
     private final Map<UUID, ActiveShip> activeShips = new HashMap<>();
     private BukkitTask activeShipTask;
+    private final Map<UUID, List<SavedBlock>> ships = new HashMap<>();
+
 
     public PortAndShipManager(ShippyPlugin plugin) {
         this.plugin = plugin;
@@ -57,9 +60,9 @@ public class PortAndShipManager {
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final File activeShipFile;
     private final Gson shipGson;
+    private BukkitTask autoSaveTask;
 
     public void saveActiveShips() {
-        activeShipTask.cancel();
         Map<UUID, SerializableActiveShip> toSave = activeShips.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -152,19 +155,6 @@ public class PortAndShipManager {
         }
     }
 
-    public void addShipForUser(final UUID shipId, List<SavedBlock> shipBlocks, Player player) {
-        try (FileWriter writer = new FileWriter(new File(dataFolder, shipId.toString() + "_ship.json"))) {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            gson.toJson(shipBlocks, writer);
-            player.sendMessage(Component.text("Ship structure saved!").color(NamedTextColor.GREEN));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public Map<UUID, Location> getShipStructures() {
-        return shipStructures;
-    }
     public Map<UUID, Location> getShipyardLocations() {
         return portLocations;
     }
@@ -173,22 +163,68 @@ public class PortAndShipManager {
         portLocations.put(playerId, loc);
     }
 
-    public List<SavedBlock> loadShipStructure(UUID uniqueId) {
-        File shipFile = new File(dataFolder, uniqueId.toString() + "_ship.json");
+    public void addShipForUser(final UUID shipId, List<SavedBlock> shipBlocks, Player player) {
+        ships.put(shipId, shipBlocks);
+        player.sendMessage(Component.text("Ship structure saved to memory!").color(NamedTextColor.GREEN));
+    }
+
+    public List<SavedBlock> getShipStructure(UUID uniqueId) {
+        return ships.getOrDefault(uniqueId, Collections.emptyList());
+    }
+
+    public void saveAllShips() {
+        File shipFile = new File(dataFolder, "ships.json");
+
+        try (FileWriter writer = new FileWriter(shipFile)) {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            gson.toJson(ships, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadAllShips() {
+        File shipFile = new File(dataFolder, "ships.json");
 
         if (!shipFile.exists()) {
-            return Collections.emptyList(); // or null if you prefer
+            return; // No ships saved yet
         }
 
         try (Reader reader = new FileReader(shipFile)) {
             Gson gson = new Gson();
-            Type listType = new TypeToken<List<SavedBlock>>() {}.getType();
-            return gson.fromJson(reader, listType);
+            Type type = new TypeToken<Map<UUID, List<SavedBlock>>>() {}.getType();
+            Map<UUID, List<SavedBlock>> loadedShips = gson.fromJson(reader, type);
+
+            if (loadedShips != null) {
+                ships.clear();
+                ships.putAll(loadedShips);
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            return Collections.emptyList(); // return empty if there's an issue
         }
     }
+
+    public void startAutoSaveTask(ShippyPlugin plugin, long intervalTicks) {
+        autoSaveTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                saveAllShips();
+                savePortsToDisk();
+                saveActiveShips();
+            }
+        }.runTaskTimerAsynchronously(plugin, intervalTicks, intervalTicks);
+    }
+
+    public void stopTasks() {
+        if (autoSaveTask != null) {
+            autoSaveTask.cancel();
+        }
+        if (activeShipTask != null) {
+            activeShipTask.cancel();
+        }
+    }
+
+
 
     public void moveDisplayShip(ActiveShip ship) {
         ship.getController().tick();
@@ -255,10 +291,10 @@ public class PortAndShipManager {
     }
 
 
-    public void addActiveShip(Player player, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
+    public void addActiveShip(UUID standId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
         if (standEntity == null) return;
-        ActiveShip ship = new ActiveShip(player.getUniqueId(), standEntity, entities, cannons);
-        activeShips.put(player.getUniqueId(), ship);
+        ActiveShip ship = new ActiveShip(standId, standEntity, entities, cannons);
+        activeShips.put(standId, ship);
     }
 
     public ActiveShip getActiveShipForPlayerUUID(UUID uniqueId) {
