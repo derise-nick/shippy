@@ -5,6 +5,7 @@ import com.clamzo.shippy.behavior.ShipInteractionListener;
 import com.clamzo.shippy.commands.CommandDebugShip;
 import com.clamzo.shippy.commands.CommandGivePort;
 import com.clamzo.shippy.commands.CommandGiveShipyard;
+import com.clamzo.shippy.structures.StructurePreviewListener;
 import com.clamzo.shippy.util.DebugVisualizer;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
@@ -27,6 +28,7 @@ public class ShippyPlugin extends JavaPlugin {
         getCommand("giveport").setExecutor(new CommandGivePort());
         getCommand("shipdebug").setExecutor(new CommandDebugShip(this, debugVisualizer));
         getServer().getPluginManager().registerEvents(new ShipyardListener(this), this);
+        getServer().getPluginManager().registerEvents(new StructurePreviewListener(this), this);
         getServer().getPluginManager().registerEvents(new ShipInteractionListener(this), this);
         manager.loadPortsFromDisk();
         manager.loadActiveShips();
