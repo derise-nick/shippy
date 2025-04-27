@@ -123,6 +123,7 @@ public class PortAndShipManager {
             sp.y = loc.getY();
             sp.z = loc.getZ();
             sp.world = loc.getWorld().getName();
+            sp.facing = StructurePlacementUtil.getCardinalFacing(loc).toString();
             list.add(sp);
         }
 
@@ -142,14 +143,17 @@ public class PortAndShipManager {
         try (Reader reader = new FileReader(dataFile)) {
             Type listType = new TypeToken<List<SavedPort>>(){}.getType();
             List<SavedPort> ports = gson.fromJson(reader, listType);
+            plugin.getLogger().info("List of ports: " + ports);
             for (SavedPort sp : ports) {
                 UUID id = UUID.fromString(sp.uuid);
                 World world = Bukkit.getWorld(sp.world);
                 if (world != null) {
-                    Location loc = new Location(world, sp.x, sp.y, sp.z);
+                    Location loc = new Location(world, sp.x, sp.y, sp.z).setRotation(StructurePlacementUtil.getYawFromFacing(sp.facing), 0);
+                    plugin.getLogger().info("Loading port location: " + loc);
                     portLocations.put(id, loc);
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -364,6 +368,13 @@ public class PortAndShipManager {
             Vector footVec = p.getLocation().toVector().subtract(new org.bukkit.util.Vector(0, 0.1, 0));
             boolean onDeck = ship.getBoundingBoxes().stream().anyMatch(bb -> bb.contains(footVec));
             if (onDeck) return ship;
+        }
+        return null;
+    }
+
+    public Location findShipyardForLocation(Location loc) {
+        for (Location shipyard: getShipyardLocations().values()) {
+            if (shipyard.clone().setRotation(0f,0f).equals(loc)) return shipyard;
         }
         return null;
     }

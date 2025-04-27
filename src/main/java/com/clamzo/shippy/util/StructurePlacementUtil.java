@@ -38,13 +38,28 @@ public class StructurePlacementUtil {
         world.getBlockAt(buttonLoc).setType(Material.STONE_BUTTON);
     }
 
-    static public BlockFace getCardinalFacing(Player player) {
-        float yaw = player.getLocation().getYaw();
+    static public BlockFace getCardinalFacingForPlayer(Player player) {
+        return getCardinalFacing(player.getLocation());
+    }
+
+    static public BlockFace getCardinalFacing(Location loc) {
+        float yaw = loc.getYaw();
         yaw = (yaw % 360 + 360) % 360; // Normalize
         if (yaw < 45 || yaw >= 315) return BlockFace.SOUTH;
         if (yaw < 135) return BlockFace.WEST;
         if (yaw < 225) return BlockFace.NORTH;
         return BlockFace.EAST;
+    }
+
+    static public float getYawFromFacing(String facing) {
+        BlockFace bf = BlockFace.valueOf(facing);
+        return switch (bf) {
+            case BlockFace.SOUTH -> 0f;
+            case BlockFace.WEST -> 90f;
+            case BlockFace.NORTH -> 180f;
+            case BlockFace.EAST -> 270f;
+            default -> 0f;
+        };
     }
 
     static public Location offsetByFacing(Location origin, int dx, int dy, int dz, BlockFace direction) {

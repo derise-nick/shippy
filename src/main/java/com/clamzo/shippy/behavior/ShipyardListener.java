@@ -6,7 +6,10 @@ import com.clamzo.shippy.util.SavedBlock;
 import com.clamzo.shippy.util.StructurePlacementUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.*;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -23,7 +26,6 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class ShipyardListener implements Listener {
@@ -63,7 +65,7 @@ public class ShipyardListener implements Listener {
 
         Player player = event.getPlayer();
         Block clickedBlock = event.getClickedBlock();
-        facing = StructurePlacementUtil.getCardinalFacing(player);
+        facing = StructurePlacementUtil.getCardinalFacingForPlayer(player);
 
         // Get the base location (one block above clicked surface)
         Location baseLocation = clickedBlock.getRelative(facing).getLocation();
@@ -73,7 +75,8 @@ public class ShipyardListener implements Listener {
             return;
         }
         StructurePlacementUtil.placeStructure(baseLocation, shipyardWidth, shipyardLength, shipyardHeight, facing);
-        this.manager.addShipyardLocation(player.getUniqueId(), baseLocation);
+        String facing = StructurePlacementUtil.getCardinalFacingForPlayer(player).toString();
+        this.manager.addShipyardLocation(player.getUniqueId(), baseLocation.setRotation(StructurePlacementUtil.getYawFromFacing(facing), 0));
         player.sendMessage(Component.text("Shipyard placed successfully!").color(NamedTextColor.GREEN));
     }
 
@@ -101,11 +104,11 @@ public class ShipyardListener implements Listener {
         Block button = event.getBlock();
         if (button.getType() != Material.STONE_BUTTON) return;
 
-        Map<UUID, Location> yardLocs = this.manager.getShipyardLocations();
-
         Location loc = button.getLocation().clone().add(0,-1,0);
-
-        if (yardLocs.containsValue(loc)) {
+        plugin.getLogger().info("Finding port for location: " + loc);
+        Location shipyard = manager.findShipyardForLocation(loc);
+        if (shipyard != null) {
+            plugin.getLogger().info("Saving ship at port location: " + loc);
             Player nearestPlayer = button.getWorld().getNearbyEntities(loc, 3, 3, 3).stream()
                     .filter(e -> e instanceof Player)
                     .map(e -> (Player) e)
@@ -113,18 +116,7 @@ public class ShipyardListener implements Listener {
                     .orElse(null);
             if (nearestPlayer != null) {
                 nearestPlayer.sendMessage(Component.text("Ship saved!").color(NamedTextColor.AQUA));
-                Location base = null;
-                for (Location shipyard: manager.getShipyardLocations().values()){
-                    plugin.getLogger().info("Shipyard: " + shipyard);
-                    if (shipyard.equals(event.getBlock().getLocation().clone().add(0,-1,0))) {
-                        base = shipyard;
-                    }
-                }
-                plugin.getLogger().info("Loc: " + event.getBlock().getLocation() + " | Base: " + base);
-                if (base == null) return;
-
                 List<SavedBlock> shipBlocks = new ArrayList<>();
-
                 Location helmLoc = null;
                 int helmCount = 0;
 
@@ -137,7 +129,7 @@ public class ShipyardListener implements Listener {
                                             (z == 0 || z == shipyardLength - 1);
                             if (isCorner) continue;
 
-                            Location testLoc = StructurePlacementUtil.offsetByFacing(base, x, y, z, StructurePlacementUtil.getCardinalFacing(nearestPlayer));
+                            Location testLoc = StructurePlacementUtil.offsetByFacing(shipyard, x, y, z, StructurePlacementUtil.getCardinalFacing(shipyard));
                             if (testLoc.getBlock().getType() == Material.LODESTONE) {
                                 helmLoc = testLoc;
                                 helmCount++;
@@ -164,7 +156,7 @@ public class ShipyardListener implements Listener {
                                             (z == 0 || z == shipyardLength - 1);
                             if (isCorner) continue;
 
-                            Location saveLoc = StructurePlacementUtil.offsetByFacing(base, x, y, z, StructurePlacementUtil.getCardinalFacing(nearestPlayer));
+                            Location saveLoc = StructurePlacementUtil.offsetByFacing(shipyard, x, y, z, StructurePlacementUtil.getCardinalFacing(shipyard));
                             Block block = saveLoc.getBlock();
                             BlockData bd = block.getBlockData().clone();
                             if (bd.getMaterial() == Material.AIR || bd.getMaterial() == Material.LODESTONE) continue; // Skip empty and helm
