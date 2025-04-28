@@ -77,7 +77,7 @@ public class ShipSerializer {
             }
         }
 
-        return new ActiveShip(stand.getUniqueId(), stand, entities, cannons);
+        return new ActiveShip(stand.getUniqueId(), stand, entities, cannons, data.helmHeight);
     }
 
     private @NotNull Interaction getInteraction(World world, BlockDisplay blockDisp, ArmorStand stand) {
@@ -117,7 +117,8 @@ public class ShipSerializer {
         return new SerializableActiveShip(
                 ship.getOwnerId(),
                 ship.getStandEntity().getLocation(),
-                displays
+                displays,
+                ship.getHelmHeight()
         );
     }
 }

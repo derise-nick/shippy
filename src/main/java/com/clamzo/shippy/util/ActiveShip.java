@@ -28,14 +28,16 @@ public class ActiveShip implements InventoryHolder {
     private @NotNull List<OrientedBoundingBox> cachedBoundingBoxes;
     private final Map<UUID, BlockDisplay> cannons;
     private final Inventory inventory;
+    private final int helmHeight;
 
-    public ActiveShip(UUID ownerId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
+    public ActiveShip(UUID ownerId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons, int helmHeight) {
         this.ownerId = ownerId;
         this.standEntity = standEntity;
         this.entities = entities;
         this.controller = new ShipController(this);
         this.cannons = cannons;
         this.inventory = Bukkit.createInventory(this, 54, Component.text("Hold"));
+        this.helmHeight = helmHeight;
     }
 
     public void updateBoundingBoxes() {
@@ -131,6 +133,10 @@ public class ActiveShip implements InventoryHolder {
     @Override
     public @NotNull Inventory getInventory() {
         return inventory;
+    }
+
+    public int getHelmHeight() {
+        return helmHeight;
     }
 }
 

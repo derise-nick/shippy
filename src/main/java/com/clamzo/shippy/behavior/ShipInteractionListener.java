@@ -56,12 +56,20 @@ public class ShipInteractionListener implements Listener {
         List<SavedBlock> saved = manager.getShipStructure(shipId);
         if (saved == null || saved.isEmpty()) {
             player.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
+            plugin.getLogger().warning("Error trying to place ship. No ship found for id: " + shipId);
             return;
         }
-        // Translate the SavedBlocks into placed blocks relative to boat location
-        Location baseLoc = clickedBlock.getLocation();
+        SavedBlock lodestone = null;
+        for (Iterator<SavedBlock> it = saved.iterator(); it.hasNext();) {
+            SavedBlock value = it.next();
+            if (value.getBlockData().getMaterial() == Material.LODESTONE) {
+                lodestone = value;
+            }
+        }
+        if (lodestone == null) return;
+        Location baseLoc = clickedBlock.getLocation().clone().add(0,lodestone.dy,0);
 
-        ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(baseLoc.clone().add(0, 0.5f, 0), EntityType.ARMOR_STAND);
+        ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(baseLoc.clone().add(0, 1, 0), EntityType.ARMOR_STAND);
         stand.setInvisible(true);
         stand.setMarker(false);
         stand.setGravity(true);
@@ -109,8 +117,8 @@ public class ShipInteractionListener implements Listener {
             UUID armorStandUUID = UUID.fromString(uuidString);
 
             ArmorStand stand = (ArmorStand) Bukkit.getEntity(armorStandUUID);
-            if (stand == null) return;
-            if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.STICK)) manager.removeActiveShipForArmorStand(stand);
+            if (stand == null || !stand.getPassengers().isEmpty()) return;
+            if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.DEBUG_STICK)) manager.removeActiveShipForArmorStand(stand);
 
             ActiveShip ship = manager.getActiveShipForArmorStand(stand);
             if (ship == null) return;
@@ -128,12 +136,17 @@ public class ShipInteractionListener implements Listener {
         Map<UUID, BlockDisplay> interactions = new HashMap<>();
         World world = origin.getWorld();
         ItemDisplay helmView = (ItemDisplay) world.spawnEntity(stand.getLocation(), EntityType.ITEM_DISPLAY);
+        int helmHeight = 0;
 
         for (SavedBlock sb : structure) {
+            if (sb.getBlockData().getMaterial() == Material.LODESTONE) {
+                helmHeight = sb.dy;
+                continue;
+            }
             Location spawnLoc = stand.getLocation().clone();
 
             // Relative offset from boat
-            Vector offset = new Vector(sb.dx-0.5, sb.dy+1.5, sb.dz);
+            Vector offset = new Vector(sb.dx-0.5, sb.dy, sb.dz-0.5);
 
             // Spawn at the boat’s location
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
@@ -165,7 +178,7 @@ public class ShipInteractionListener implements Listener {
         helmView.setPersistent(true);
         helmView.setTeleportDuration(3);
         helmView.setTransformation(new Transformation(
-                new Vector3f(0, 2f, 0.5f),
+                new Vector3f(0, 0.5f, 0),
                 new AxisAngle4f(0, 0, 1, 0),
                 new Vector3f(1, 1, 1),
                 new AxisAngle4f(0, 0, 0, 0)
@@ -174,8 +187,8 @@ public class ShipInteractionListener implements Listener {
         entities.add(helmView);
 
         Interaction helmInteraction = (Interaction) world.spawnEntity(stand.getLocation().clone().add(-0.5, 1.5, 0), EntityType.INTERACTION);
-        helmInteraction.setInteractionHeight(1.5f);
-        helmInteraction.setInteractionWidth(1.5f);
+        helmInteraction.setInteractionHeight(1);
+        helmInteraction.setInteractionWidth(1);
         helmInteraction.setInvulnerable(true);
         helmInteraction.setGravity(false);
         helmInteraction.setPersistent(true);
@@ -199,7 +212,7 @@ public class ShipInteractionListener implements Listener {
         });
 
         // Register the active ship
-        manager.addActiveShip(standId, stand, entities, interactions);
+        manager.addActiveShip(standId, stand, entities, interactions, helmHeight);
         nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
 }

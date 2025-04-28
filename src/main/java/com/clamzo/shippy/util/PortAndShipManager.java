@@ -63,14 +63,10 @@ public class PortAndShipManager {
     private BukkitTask autoSaveTask;
 
     public void saveActiveShips() {
-        Map<UUID, SerializableActiveShip> toSave = activeShips.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> serializeActiveShip(entry.getValue())));
-        try (Writer writer = new FileWriter(activeShipFile)) {
-            shipGson.toJson(toSave, writer);
-            List<UUID> toRemove = new ArrayList<>(activeShips.keySet());
+        try {
+            saveActiveShipsAsync();
 
+            List<UUID> toRemove = new ArrayList<>(activeShips.keySet());
             for (UUID id : toRemove) {
                 ActiveShip ship = activeShips.get(id);
                 if (ship != null) {
@@ -78,7 +74,18 @@ public class PortAndShipManager {
                 }
             }
         } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save active ships: " + e.getMessage());
+            plugin.getLogger().warning("Failed to save active ships during disable: " + e.getMessage());
+        }
+    }
+    private void saveActiveShipsAsync() throws IOException {
+        Map<UUID, SerializableActiveShip> toSave = activeShips.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> serializeActiveShip(entry.getValue())));
+        try (Writer writer = new FileWriter(activeShipFile)) {
+            shipGson.toJson(toSave, writer);
+        } catch (IOException e) {
+            throw new IOException(e);
         }
     }
 
@@ -143,13 +150,11 @@ public class PortAndShipManager {
         try (Reader reader = new FileReader(dataFile)) {
             Type listType = new TypeToken<List<SavedPort>>(){}.getType();
             List<SavedPort> ports = gson.fromJson(reader, listType);
-            plugin.getLogger().info("List of ports: " + ports);
             for (SavedPort sp : ports) {
                 UUID id = UUID.fromString(sp.uuid);
                 World world = Bukkit.getWorld(sp.world);
                 if (world != null) {
                     Location loc = new Location(world, sp.x, sp.y, sp.z).setRotation(StructurePlacementUtil.getYawFromFacing(sp.facing), 0);
-                    plugin.getLogger().info("Loading port location: " + loc);
                     portLocations.put(id, loc);
                 }
             }
@@ -214,7 +219,11 @@ public class PortAndShipManager {
             public void run() {
                 saveAllShips();
                 savePortsToDisk();
-                saveActiveShips();
+                try {
+                    saveActiveShipsAsync();
+                } catch (IOException e) {
+                    plugin.getLogger().warning("Failed to save active ships during backup job: " + e.getMessage());
+                }
             }
         }.runTaskTimerAsynchronously(plugin, intervalTicks, intervalTicks);
     }
@@ -246,7 +255,7 @@ public class PortAndShipManager {
                 NamespacedKey helmFlag = new NamespacedKey(plugin, "is_helm");
                 PersistentDataContainer container = entity.getPersistentDataContainer();
                 if (container.has(helmFlag, PersistentDataType.BYTE)) {
-                    entity.teleport(base.clone().add(-0.5, 1.5, 0));
+                    entity.teleport(base.clone().add(0, 1, 0));
                     continue;
                 }
                 addBoundInteraction(ship, interaction, stand);
@@ -295,9 +304,9 @@ public class PortAndShipManager {
     }
 
 
-    public void addActiveShip(UUID standId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons) {
+    public void addActiveShip(UUID standId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons, int helmHeight) {
         if (standEntity == null) return;
-        ActiveShip ship = new ActiveShip(standId, standEntity, entities, cannons);
+        ActiveShip ship = new ActiveShip(standId, standEntity, entities, cannons, helmHeight);
         activeShips.put(standId, ship);
     }
 

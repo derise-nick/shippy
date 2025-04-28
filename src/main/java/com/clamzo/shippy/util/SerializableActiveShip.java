@@ -14,11 +14,13 @@ public class SerializableActiveShip {
     public UUID ownerId;
     public Location standLocation;
     public List<SerializedEntity> entities;
+    public int helmHeight;
 
-    public SerializableActiveShip(UUID ownerId, @NotNull Location location, List<SerializedEntity> entities) {
+    public SerializableActiveShip(UUID ownerId, @NotNull Location location, List<SerializedEntity> entities, int helmHeight) {
         this.ownerId = ownerId;
         this.standLocation = location;
         this.entities = entities;
+        this.helmHeight = helmHeight;
     }
 
     public static class SerializedEntity {

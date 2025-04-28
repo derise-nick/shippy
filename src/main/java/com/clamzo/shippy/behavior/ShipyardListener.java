@@ -32,6 +32,7 @@ public class ShipyardListener implements Listener {
     private final int shipyardWidth = 8;
     private final int shipyardLength = 12;
     private final int shipyardHeight = 8;
+    private final int waterLevel = -2;
 
     // TODO: Make the port work with whoever hit the button
     // TODO: Fix the buttons to work facing-agnostically
@@ -75,8 +76,10 @@ public class ShipyardListener implements Listener {
             return;
         }
         StructurePlacementUtil.placeStructure(baseLocation, shipyardWidth, shipyardLength, shipyardHeight, facing);
-        String facing = StructurePlacementUtil.getCardinalFacingForPlayer(player).toString();
-        this.manager.addShipyardLocation(player.getUniqueId(), baseLocation.setRotation(StructurePlacementUtil.getYawFromFacing(facing), 0));
+        BlockFace bFacing = StructurePlacementUtil.getCardinalFacingForPlayer(player);
+        String facing = bFacing.toString();
+        Location buttonLoc = StructurePlacementUtil.offsetByFacing(baseLocation, 1, 1, 0, bFacing);
+        this.manager.addShipyardLocation(player.getUniqueId(), buttonLoc.setRotation(StructurePlacementUtil.getYawFromFacing(facing), 0));
         player.sendMessage(Component.text("Shipyard placed successfully!").color(NamedTextColor.GREEN));
     }
 
@@ -104,11 +107,9 @@ public class ShipyardListener implements Listener {
         Block button = event.getBlock();
         if (button.getType() != Material.STONE_BUTTON) return;
 
-        Location loc = button.getLocation().clone().add(0,-1,0);
-        plugin.getLogger().info("Finding port for location: " + loc);
+        Location loc = button.getLocation().clone().add(0,0,0);
         Location shipyard = manager.findShipyardForLocation(loc);
         if (shipyard != null) {
-            plugin.getLogger().info("Saving ship at port location: " + loc);
             Player nearestPlayer = button.getWorld().getNearbyEntities(loc, 3, 3, 3).stream()
                     .filter(e -> e instanceof Player)
                     .map(e -> (Player) e)
@@ -119,13 +120,14 @@ public class ShipyardListener implements Listener {
                 List<SavedBlock> shipBlocks = new ArrayList<>();
                 Location helmLoc = null;
                 int helmCount = 0;
+                int underWaterCount = 0;
 
                 // First pass: Find helm location
-                for (int x = 0; x < shipyardWidth; x++) {
-                    for (int y = 1; y < shipyardHeight; y++) {
+                for (int x = -1; x < shipyardWidth-1; x++) {
+                    for (int y = 0; y < shipyardHeight; y++) {
                         for (int z = 0; z < shipyardLength; z++) {
                             boolean isCorner =
-                                    (x == 0 || x == shipyardWidth - 1) &&
+                                    (x == -1 || x == shipyardWidth - 2) &&
                                             (z == 0 || z == shipyardLength - 1);
                             if (isCorner) continue;
 
@@ -134,6 +136,7 @@ public class ShipyardListener implements Listener {
                                 helmLoc = testLoc;
                                 helmCount++;
                             }
+                            if (y <= -waterLevel && !testLoc.getBlock().getType().isAir()) underWaterCount++;
                         }
                     }
                 }
@@ -145,24 +148,29 @@ public class ShipyardListener implements Listener {
                     nearestPlayer.sendMessage(Component.text("Your ship has multiple helm blocks. Please leave only one LODESTONE.").color(NamedTextColor.RED));
                     return;
                 }
+                if (underWaterCount == 0) {
+                    nearestPlayer.sendMessage(Component.text("Your ship must have at least one block under the water level marked on the columns.").color(NamedTextColor.RED));
+                    return;
+                }
 
                 Vector helmVector = helmLoc.toVector(); // Used for relative offsets
 
-                for (int x = 0; x < shipyardWidth; x++) {
-                    for (int y = 1; y < shipyardHeight; y++) {
+                for (int x = -1; x < shipyardWidth-1; x++) {
+                    for (int y = 0; y < shipyardHeight; y++) {
                         for (int z = 0; z < shipyardLength; z++) {
                             boolean isCorner =
-                                    (x == 0 || x == shipyardWidth - 1) &&
+                                    (x == -1 || x == shipyardWidth - 2) &&
                                             (z == 0 || z == shipyardLength - 1);
                             if (isCorner) continue;
 
                             Location saveLoc = StructurePlacementUtil.offsetByFacing(shipyard, x, y, z, StructurePlacementUtil.getCardinalFacing(shipyard));
                             Block block = saveLoc.getBlock();
                             BlockData bd = block.getBlockData().clone();
-                            if (bd.getMaterial() == Material.AIR || bd.getMaterial() == Material.LODESTONE) continue; // Skip empty and helm
+                            if (bd.getMaterial() == Material.AIR) continue;
 
                             Vector rel = saveLoc.toVector().subtract(helmVector);
                             SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), bd);
+                            if (bd.getMaterial() == Material.LODESTONE) sb.dy = y+waterLevel;
                             shipBlocks.add(sb);
                         }
                     }

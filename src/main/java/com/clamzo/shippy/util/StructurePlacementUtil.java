@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 public class StructurePlacementUtil {
     static public void placeStructure(Location base, int structWidth, int structLength, int structHeight, BlockFace facing) {
+        int waterLevel = 2;
         World world = base.getWorld();
 
         for (int x = 0; x < structWidth; x++) {
@@ -19,13 +20,13 @@ public class StructurePlacementUtil {
                     // Floor layer = Stone Bricks
                     if (y == 0) {
                         mat = Material.STONE_BRICKS;
-                    }
-                    // Pillars at corners
-                    else if ((x == 0 || x == structWidth - 1) && (z == 0 || z == structLength - 1)) {
-                        mat = Material.OAK_LOG;
-                    }
-                    // Air gaps
-                    else {
+                    } else if ((x == 0 || x == structWidth - 1) && (z == 0 || z == structLength - 1)) {
+                        if (y <= waterLevel){
+                            mat = Material.CYAN_WOOL;
+                        } else {
+                            mat = Material.OAK_LOG;
+                        }
+                    } else {
                         mat = Material.AIR;
                     }
 
@@ -34,7 +35,7 @@ public class StructurePlacementUtil {
             }
         }
 
-        Location buttonLoc = offsetByFacing(base, 0, 1, 0, facing);
+        Location buttonLoc = offsetByFacing(base, 1, 1, 0, facing);
         world.getBlockAt(buttonLoc).setType(Material.STONE_BUTTON);
     }
 

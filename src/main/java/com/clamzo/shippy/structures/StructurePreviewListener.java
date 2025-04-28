@@ -77,7 +77,7 @@ public class StructurePreviewListener implements Listener {
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
-        clearPreview(player);// or offhand if you want
+        clearPreview(player);
         if (item == null || item.getType() != Material.BLAZE_POWDER) {
             return;
         }
@@ -86,7 +86,6 @@ public class StructurePreviewListener implements Listener {
         BlockFace facing = StructurePlacementUtil.getCardinalFacing(loc);
 
         if (event.isSneaking()) {
-            // Start preview
             showPreview(player, loc.getBlock().getLocation().clone().add(facing.getModX(), facing.getModY() - 1, facing.getModZ()), 8, 12, 8, facing);
         }
     }
