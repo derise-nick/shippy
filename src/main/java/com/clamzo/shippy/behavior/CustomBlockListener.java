@@ -5,7 +5,6 @@ import com.clamzo.shippy.structures.StructurePlacementUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -32,12 +31,13 @@ import java.util.UUID;
 public class CustomBlockListener implements Listener {
     private final ShippyPlugin plugin;
     private final Map<Block, ItemDisplay> customBlocks;
-    private final Map<BlockPosKey, UUID> customItemDisplays;
+    private final CustomBlockManager customBlockManager;
+
 
     public CustomBlockListener(ShippyPlugin plugin) {
         this.plugin = plugin;
+        this.customBlockManager = plugin.getCustomBlockManager();
         this.customBlocks = new HashMap<>();
-        this.customItemDisplays = new HashMap<>();
     }
     @EventHandler
     public void onBlockPlaced(BlockPlaceEvent event) {
@@ -51,8 +51,8 @@ public class CustomBlockListener implements Listener {
                     spawnLoc, EntityType.ITEM_DISPLAY);
             display.setItemStack(item);
             display.setPersistent(true);
-            BlockPosKey bpk = getBpkFromLoc(block.getLocation());
-            customItemDisplays.put(bpk, display.getUniqueId());
+            BlockPosKey bpk = customBlockManager.getBpkFromLoc(block.getLocation());
+            customBlockManager.addCustomItemDisplay(bpk, display);
 
             display.setTransformation(new Transformation(
                     new Vector3f(0,0,0),
@@ -75,28 +75,18 @@ public class CustomBlockListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         assert event.getClickedBlock() != null;
-        BlockPosKey bpk = getBpkFromLoc(event.getClickedBlock().getLocation());
-         if (!customItemDisplays.containsKey(bpk)) return;
+        BlockPosKey bpk = customBlockManager.getBpkFromLoc(event.getClickedBlock().getLocation());
+         if (!customBlockManager.getCustomItemDisplays().containsKey(bpk)) return;
         event.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
-        BlockPosKey key = getBpkFromLoc(e.getBlock().getLocation());
-        UUID displayId = customItemDisplays.remove(key);
+        BlockPosKey key = customBlockManager.getBpkFromLoc(e.getBlock().getLocation());
+        UUID displayId = customBlockManager.removeCustomItemDisplay(key);
         if (displayId != null) {
             Objects.requireNonNull(Bukkit.getEntity(displayId)).remove();
         }
-    }
-
-    public record BlockPosKey(UUID worldUuid, int x, int y, int z) {}
-    public BlockPosKey getBpkFromLoc(Location blockLoc) {
-        return new BlockPosKey(
-                blockLoc.getWorld().getUID(),
-                blockLoc.getBlockX(),
-                blockLoc.getBlockY(),
-                blockLoc.getBlockZ()
-        );
     }
 
     @EventHandler
@@ -104,34 +94,10 @@ public class CustomBlockListener implements Listener {
         NamespacedKey posKey = new NamespacedKey(plugin, "custom_blockpos");
         for (Entity e : event.getEntities()) {
             if (e instanceof ItemDisplay itemDisp) {
-                addItemDisplayToMap(itemDisp, posKey, event.getWorld());
+                customBlockManager.addItemDisplayToMap(itemDisp, posKey, event.getWorld());
             }
         }
     }
 
-    public void loadCustomBlockModels() {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            NamespacedKey posKey = new NamespacedKey(plugin, "custom_blockpos");
 
-            for (World world : Bukkit.getWorlds()) {
-                for (ItemDisplay disp : world.getEntitiesByClass(ItemDisplay.class)) {
-                    addItemDisplayToMap(disp, posKey, world);
-                }
-            }
-        }, 20L);
-    }
-
-    private void addItemDisplayToMap(ItemDisplay disp, NamespacedKey posKey, World world) {
-        var pdc = disp.getPersistentDataContainer();
-        if (!pdc.has(posKey, PersistentDataType.STRING)) return;
-        String[] parts = Objects.requireNonNull(pdc.get(posKey, PersistentDataType.STRING)).split(",");
-        UUID worldId = UUID.fromString(parts[3]);
-        if (!world.getUID().equals(worldId)) return;  // skip if world mismatch
-        int bx = Integer.parseInt(parts[0]);
-        int by = Integer.parseInt(parts[1]);
-        int bz = Integer.parseInt(parts[2]);
-
-        BlockPosKey key = new BlockPosKey(worldId, bx, by, bz);
-        customItemDisplays.put(key, disp.getUniqueId());
-    }
 }

@@ -31,7 +31,7 @@ public class ShipInteractionListener implements Listener {
     private final ShippyPlugin plugin;
 
     public ShipInteractionListener(ShippyPlugin plugin) {
-        this.manager = plugin.manager;
+        this.manager = plugin.shipManager;
         this.plugin = plugin;
     }
 

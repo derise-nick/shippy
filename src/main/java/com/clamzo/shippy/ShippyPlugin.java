@@ -1,6 +1,7 @@
 package com.clamzo.shippy;
 
 import com.clamzo.shippy.behavior.CustomBlockListener;
+import com.clamzo.shippy.behavior.CustomBlockManager;
 import com.clamzo.shippy.behavior.ShipyardListener;
 import com.clamzo.shippy.behavior.ShipInteractionListener;
 import com.clamzo.shippy.commands.CommandDebugShip;
@@ -16,15 +17,16 @@ import java.io.File;
 
 public class ShippyPlugin extends JavaPlugin {
     private final File dataFolder = getDataFolder();
-    public PortAndShipManager manager;
+    public PortAndShipManager shipManager;
+    private CustomBlockManager customBlockManager;
     private DebugVisualizer debugVisualizer;
     private ShipPhysicsUtil physicsUtil;
 
     @Override
     public void onEnable() {
-        this.manager = new PortAndShipManager(this);
+        this.shipManager = new PortAndShipManager(this);
         debugVisualizer = new DebugVisualizer(this);
-        CustomBlockListener cbl = new CustomBlockListener(this);
+        this.customBlockManager = new CustomBlockManager(this);
         getLogger().info("Shippy plugin has been enabled!");
         getCommand("giveshipyard").setExecutor(new CommandGiveShipyard());
         getCommand("giveport").setExecutor(new CommandGivePort());
@@ -32,27 +34,30 @@ public class ShippyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ShipyardListener(this), this);
         getServer().getPluginManager().registerEvents(new StructurePreviewListener(this), this);
         getServer().getPluginManager().registerEvents(new ShipInteractionListener(this), this);
-        getServer().getPluginManager().registerEvents(cbl, this);
-        manager.loadPortsFromDisk();
-        manager.loadActiveShips();
-        manager.activateAllShips();
-        manager.loadAllShips();
-        manager.startAutoSaveTask(this, 20L * 300L);
+        getServer().getPluginManager().registerEvents(new CustomBlockListener(this), this);
+        shipManager.loadPortsFromDisk();
+        shipManager.loadActiveShips();
+        shipManager.activateAllShips();
+        shipManager.loadAllShips();
+        shipManager.startAutoSaveTask(this, 20L * 300L);
         physicsUtil = new ShipPhysicsUtil(this);
         physicsUtil.activateDeckPhysics();
-        cbl.loadCustomBlockModels();
+        customBlockManager.loadCustomBlockModels();
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Shippy plugin has been disabled.");
-        manager.stopTasks();
-        manager.savePortsToDisk();
-        manager.saveActiveShips();
-        manager.saveAllShips();
+        shipManager.stopTasks();
+        shipManager.savePortsToDisk();
+        shipManager.saveActiveShips();
+        shipManager.saveAllShips();
     }
 
-    public PortAndShipManager getManager() {
-        return this.manager;
+    public PortAndShipManager getShipManager() {
+        return this.shipManager;
+    }
+    public CustomBlockManager getCustomBlockManager() {
+        return this.customBlockManager;
     }
 }

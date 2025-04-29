@@ -47,7 +47,7 @@ public class ShipPhysicsUtil {
     public void activateDeckPhysics() {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                ActiveShip ship = plugin.getManager().getDeckForPlayer(player);
+                ActiveShip ship = plugin.getShipManager().getDeckForPlayer(player);
                 if (ship == null) {
                     if (!player.hasGravity()) player.setGravity(true);
                     continue;

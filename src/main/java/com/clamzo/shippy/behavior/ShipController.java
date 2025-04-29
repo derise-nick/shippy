@@ -81,7 +81,7 @@ public class ShipController {
         }
         Location predicted = loc.clone().add(velocity);
 
-        if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getManager().getActiveShipForArmorStand(shipSeat), shipSeat.getWorld())) {
+        if (ShipPhysicsUtil.canMoveTo(predicted, plugin.getShipManager().getActiveShipForArmorStand(shipSeat), shipSeat.getWorld())) {
             shipSeat.setVelocity(velocity);
         } else {
             velocity.zero();

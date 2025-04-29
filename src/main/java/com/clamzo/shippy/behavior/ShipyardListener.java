@@ -44,7 +44,7 @@ public class ShipyardListener implements Listener {
     private final ShippyPlugin plugin;
 
     public ShipyardListener(ShippyPlugin plugin) {
-        this.manager = plugin.manager;
+        this.manager = plugin.shipManager;
         this.plugin = plugin;
         key = new NamespacedKey(plugin, "ship_id");
     }
