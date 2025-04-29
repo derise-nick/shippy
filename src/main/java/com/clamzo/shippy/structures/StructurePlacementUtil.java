@@ -1,4 +1,4 @@
-package com.clamzo.shippy.util;
+package com.clamzo.shippy.structures;
 
 import org.bukkit.Location;
 import org.bukkit.Material;

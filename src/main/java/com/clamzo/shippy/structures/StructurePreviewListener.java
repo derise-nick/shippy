@@ -1,7 +1,6 @@
 package com.clamzo.shippy.structures;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.util.StructurePlacementUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;

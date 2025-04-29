@@ -3,7 +3,7 @@ package com.clamzo.shippy.behavior;
 import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
-import com.clamzo.shippy.util.StructurePlacementUtil;
+import com.clamzo.shippy.structures.StructurePlacementUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;

@@ -3,6 +3,8 @@ package com.clamzo.shippy.util;
 import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.serialization.LocationAdapter;
 import com.clamzo.shippy.serialization.Vector3fAdapter;
+import com.clamzo.shippy.structures.SavedPort;
+import com.clamzo.shippy.structures.StructurePlacementUtil;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
