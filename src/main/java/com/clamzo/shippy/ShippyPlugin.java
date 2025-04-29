@@ -1,5 +1,6 @@
 package com.clamzo.shippy;
 
+import com.clamzo.shippy.behavior.CustomBlockListener;
 import com.clamzo.shippy.behavior.ShipyardListener;
 import com.clamzo.shippy.behavior.ShipInteractionListener;
 import com.clamzo.shippy.commands.CommandDebugShip;
@@ -23,6 +24,7 @@ public class ShippyPlugin extends JavaPlugin {
     public void onEnable() {
         this.manager = new PortAndShipManager(this);
         debugVisualizer = new DebugVisualizer(this);
+        CustomBlockListener cbl = new CustomBlockListener(this);
         getLogger().info("Shippy plugin has been enabled!");
         getCommand("giveshipyard").setExecutor(new CommandGiveShipyard());
         getCommand("giveport").setExecutor(new CommandGivePort());
@@ -30,6 +32,7 @@ public class ShippyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ShipyardListener(this), this);
         getServer().getPluginManager().registerEvents(new StructurePreviewListener(this), this);
         getServer().getPluginManager().registerEvents(new ShipInteractionListener(this), this);
+        getServer().getPluginManager().registerEvents(cbl, this);
         manager.loadPortsFromDisk();
         manager.loadActiveShips();
         manager.activateAllShips();
@@ -37,6 +40,7 @@ public class ShippyPlugin extends JavaPlugin {
         manager.startAutoSaveTask(this, 20L * 300L);
         physicsUtil = new ShipPhysicsUtil(this);
         physicsUtil.activateDeckPhysics();
+        cbl.loadCustomBlockModels();
     }
 
     @Override

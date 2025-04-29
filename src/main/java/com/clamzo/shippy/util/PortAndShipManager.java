@@ -243,8 +243,6 @@ public class PortAndShipManager {
         ship.getController().tick();
         ArmorStand stand = ship.getStandEntity();
         List<Entity> entities = ship.getEntities();
-        List<Interaction> cannonInteractions = new ArrayList<>();
-        List<BlockDisplay> barrels = new ArrayList<>();
 
         // Base location = boat position
         Location base = stand.getLocation();
@@ -255,7 +253,7 @@ public class PortAndShipManager {
                 NamespacedKey helmFlag = new NamespacedKey(plugin, "is_helm");
                 PersistentDataContainer container = entity.getPersistentDataContainer();
                 if (container.has(helmFlag, PersistentDataType.BYTE)) {
-                    entity.teleport(base.clone().add(0, 1, 0));
+                    entity.teleport(base);
                     continue;
                 }
                 addBoundInteraction(ship, interaction, stand);
