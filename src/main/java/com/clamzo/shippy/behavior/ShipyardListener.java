@@ -39,12 +39,14 @@ public class ShipyardListener implements Listener {
     // TODO: Trigger from sign use instead of button
 
     private BlockFace facing = BlockFace.NORTH;
-    private final PortAndShipManager manager;
+    private final PortAndShipManager shipManager;
+    private final CustomBlockManager customBlockManager;
     private final NamespacedKey key;
     private final ShippyPlugin plugin;
 
     public ShipyardListener(ShippyPlugin plugin) {
-        this.manager = plugin.shipManager;
+        this.shipManager = plugin.shipManager;
+        this.customBlockManager = plugin.getCustomBlockManager();
         this.plugin = plugin;
         key = new NamespacedKey(plugin, "ship_id");
     }
@@ -79,7 +81,7 @@ public class ShipyardListener implements Listener {
         BlockFace bFacing = StructurePlacementUtil.getCardinalFacingForPlayer(player);
         String facing = bFacing.toString();
         Location buttonLoc = StructurePlacementUtil.offsetByFacing(baseLocation, 1, 1, 0, bFacing);
-        this.manager.addShipyardLocation(player.getUniqueId(), buttonLoc.setRotation(StructurePlacementUtil.getYawFromFacing(facing), 0));
+        this.shipManager.addShipyardLocation(player.getUniqueId(), buttonLoc.setRotation(StructurePlacementUtil.getYawFromFacing(facing), 0));
         player.sendMessage(Component.text("Shipyard placed successfully!").color(NamedTextColor.GREEN));
     }
 
@@ -108,7 +110,7 @@ public class ShipyardListener implements Listener {
         if (button.getType() != Material.STONE_BUTTON) return;
 
         Location loc = button.getLocation().clone().add(0,0,0);
-        Location shipyard = manager.findShipyardForLocation(loc);
+        Location shipyard = shipManager.findShipyardForLocation(loc);
         if (shipyard != null) {
             Player nearestPlayer = button.getWorld().getNearbyEntities(loc, 3, 3, 3).stream()
                     .filter(e -> e instanceof Player)
@@ -132,7 +134,8 @@ public class ShipyardListener implements Listener {
                             if (isCorner) continue;
 
                             Location testLoc = StructurePlacementUtil.offsetByFacing(shipyard, x, y, z, StructurePlacementUtil.getCardinalFacing(shipyard));
-                            if (testLoc.getBlock().getType() == Material.LODESTONE) {
+                            boolean isCustomBlock = customBlockManager.locationIsCustomBlock(testLoc);
+                            if (testLoc.getBlock().getType() == Material.OAK_FENCE && isCustomBlock) {
                                 helmLoc = testLoc;
                                 helmCount++;
                             }
@@ -142,10 +145,10 @@ public class ShipyardListener implements Listener {
                 }
 
                 if (helmCount == 0) {
-                    nearestPlayer.sendMessage(Component.text("Your ship must have exactly one LODESTONE block to act as a helm.").color(NamedTextColor.RED));
+                    nearestPlayer.sendMessage(Component.text("Your ship must have exactly one helm block to act as a helm.").color(NamedTextColor.RED));
                     return;
                 } else if (helmCount > 1) {
-                    nearestPlayer.sendMessage(Component.text("Your ship has multiple helm blocks. Please leave only one LODESTONE.").color(NamedTextColor.RED));
+                    nearestPlayer.sendMessage(Component.text("Your ship has multiple helm blocks. Please leave only one helm.").color(NamedTextColor.RED));
                     return;
                 }
                 if (underWaterCount == 0) {
@@ -169,8 +172,9 @@ public class ShipyardListener implements Listener {
                             if (bd.getMaterial() == Material.AIR) continue;
 
                             Vector rel = saveLoc.toVector().subtract(helmVector);
-                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), bd);
-                            if (bd.getMaterial() == Material.LODESTONE) sb.dy = y+waterLevel;
+                            boolean isCustomBlock = customBlockManager.locationIsCustomBlock(saveLoc);
+                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), bd, isCustomBlock);
+                            if (bd.getMaterial() == Material.OAK_FENCE && isCustomBlock) sb.dy = y+waterLevel;
                             shipBlocks.add(sb);
                         }
                     }
@@ -178,10 +182,10 @@ public class ShipyardListener implements Listener {
 
                 UUID shipId = UUID.randomUUID();
                 // Preventing duplicates
-                while (!this.manager.getShipStructure(shipId).isEmpty()) {
+                while (!this.shipManager.getShipStructure(shipId).isEmpty()) {
                     shipId = UUID.randomUUID();
                 }
-                manager.addShipForUser(shipId, shipBlocks, nearestPlayer);
+                shipManager.addShipForUser(shipId, shipBlocks, nearestPlayer);
 
                 ItemStack shipItem = new ItemStack(Material.OAK_CHEST_BOAT);
                 ItemMeta meta = shipItem.getItemMeta();

@@ -27,11 +27,13 @@ import org.joml.Vector3f;
 import java.util.*;
 
 public class ShipInteractionListener implements Listener {
-    private final PortAndShipManager manager;
+    private final PortAndShipManager shipManager;
+    private final CustomBlockManager customBlockManager;
     private final ShippyPlugin plugin;
 
     public ShipInteractionListener(ShippyPlugin plugin) {
-        this.manager = plugin.shipManager;
+        this.shipManager = plugin.shipManager;
+        this.customBlockManager = plugin.getCustomBlockManager();
         this.plugin = plugin;
     }
 
@@ -53,21 +55,22 @@ public class ShipInteractionListener implements Listener {
         event.setCancelled(true);
 
         // Load their ship structure
-        List<SavedBlock> saved = manager.getShipStructure(shipId);
+        List<SavedBlock> saved = shipManager.getShipStructure(shipId);
         if (saved == null || saved.isEmpty()) {
             player.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));
             plugin.getLogger().warning("Error trying to place ship. No ship found for id: " + shipId);
             return;
         }
-        SavedBlock lodestone = null;
+
+        SavedBlock helm = null;
         for (Iterator<SavedBlock> it = saved.iterator(); it.hasNext();) {
             SavedBlock value = it.next();
-            if (value.getBlockData().getMaterial() == Material.LODESTONE) {
-                lodestone = value;
+            if (value.getBlockData().getMaterial() == Material.OAK_FENCE && value.isCustomBlock) {
+                helm = value;
             }
         }
-        if (lodestone == null) return;
-        Location baseLoc = clickedBlock.getLocation().clone().add(0,lodestone.dy,0);
+        if (helm == null) return;
+        Location baseLoc = clickedBlock.getLocation().clone().add(0,helm.dy,0);
 
         ArmorStand stand = (ArmorStand) player.getWorld().spawnEntity(baseLoc.clone().add(0, 1, 0), EntityType.ARMOR_STAND);
         stand.setInvisible(true);
@@ -106,7 +109,7 @@ public class ShipInteractionListener implements Listener {
                             ArmorStand stand = (ArmorStand) Bukkit.getEntity(UUID.fromString(
                                 container.get(helmKey, PersistentDataType.STRING)));
                             if (stand == null) return;
-                            ActiveShip ship = manager.getActiveShipForArmorStand(stand);
+                            ActiveShip ship = shipManager.getActiveShipForArmorStand(stand);
                             event.getPlayer().openInventory(ship.getInventory());
                         }
                         break;
@@ -118,9 +121,9 @@ public class ShipInteractionListener implements Listener {
 
             ArmorStand stand = (ArmorStand) Bukkit.getEntity(armorStandUUID);
             if (stand == null || !stand.getPassengers().isEmpty()) return;
-            if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.DEBUG_STICK)) manager.removeActiveShipForArmorStand(stand);
+            if (event.getPlayer().getInventory().getItemInMainHand().getType().equals(Material.DEBUG_STICK)) shipManager.removeActiveShipForArmorStand(stand);
 
-            ActiveShip ship = manager.getActiveShipForArmorStand(stand);
+            ActiveShip ship = shipManager.getActiveShipForArmorStand(stand);
             if (ship == null) return;
 
             Player player = event.getPlayer();
@@ -139,7 +142,7 @@ public class ShipInteractionListener implements Listener {
         int helmHeight = 0;
 
         for (SavedBlock sb : structure) {
-            if (sb.getBlockData().getMaterial() == Material.LODESTONE) {
+            if (sb.getBlockData().getMaterial() == Material.OAK_FENCE && sb.isCustomBlock) {
                 helmHeight = sb.dy;
                 continue;
             }
@@ -212,7 +215,7 @@ public class ShipInteractionListener implements Listener {
         });
 
         // Register the active ship
-        manager.addActiveShip(standId, stand, entities, interactions, helmHeight);
+        shipManager.addActiveShip(standId, stand, entities, interactions, helmHeight);
         nearestPlayer.sendMessage(Component.text("Ship deployed!").color(NamedTextColor.GREEN));
     }
 }
