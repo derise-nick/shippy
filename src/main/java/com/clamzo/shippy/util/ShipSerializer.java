@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +58,10 @@ public class ShipSerializer {
                     blockDisp.setPersistent(true);
                     blockDisp.setTeleportDuration(3);
                     entities.add(blockDisp);
-                    if (blockDisp.getBlock().getMaterial().equals(Material.DISPENSER) || blockDisp.getBlock().getMaterial().equals(Material.BARREL)) {
+                    PersistentDataContainer pdc = blockDisp.getPersistentDataContainer();
+                    boolean isCustomBlock = (!pdc.has(new NamespacedKey(plugin, "custom_blockpos"), PersistentDataType.STRING));
+                    boolean isCannon = blockDisp.getBlock().getMaterial().equals(Material.GRINDSTONE) && isCustomBlock;
+                    if (isCannon || blockDisp.getBlock().getMaterial().equals(Material.BARREL)) {
                         Interaction interaction = getInteraction(world, blockDisp, stand);
                         cannons.put(blockDisp.getUniqueId(), blockDisp);
                         entities.add(interaction);

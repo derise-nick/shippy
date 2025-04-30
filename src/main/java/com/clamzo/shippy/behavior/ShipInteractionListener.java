@@ -101,7 +101,7 @@ public class ShipInteractionListener implements Listener {
             Entity refEntity = Bukkit.getEntity(UUID.fromString(container.get(displayKey, PersistentDataType.STRING)));
             if (refEntity instanceof BlockDisplay block) {
                 switch (block.getBlock().getMaterial()) {
-                    case Material.DISPENSER:
+                    case Material.GRINDSTONE:
                         item.getWorld().spawnEntity(item.getLocation(), EntityType.FIREBALL);
                         break;
                     case Material.BARREL:
@@ -155,7 +155,7 @@ public class ShipInteractionListener implements Listener {
             BlockDisplay display = (BlockDisplay) world.spawnEntity(spawnLoc, EntityType.BLOCK_DISPLAY);
             display.setBlock(sb.getBlockData());
             display.setPersistent(true);
-            display.setTeleportDuration(3); // Smooth movement
+            display.setTeleportDuration(3); 
 
             // Apply relative offset as a transformation
             display.setTransformation(new Transformation(
@@ -167,7 +167,10 @@ public class ShipInteractionListener implements Listener {
 
             entities.add(display);
             Material dispMat = sb.getBlockData().getMaterial();
-            if (dispMat.equals(Material.DISPENSER) || dispMat.equals(Material.BARREL)) {
+            PersistentDataContainer pdc = display.getPersistentDataContainer();
+            boolean isCustomBlock = (!pdc.has(new NamespacedKey(plugin, "custom_blockpos"), PersistentDataType.STRING));
+            boolean isCannon = display.getBlock().getMaterial().equals(Material.GRINDSTONE) && isCustomBlock;
+            if (isCannon || dispMat.equals(Material.BARREL)) {
                 interactions.put(display.getUniqueId(), display);
             }
         }

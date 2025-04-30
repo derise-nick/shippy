@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class CustomBlockManager {
     }
 
     public void addItemDisplayToMap(ItemDisplay disp, NamespacedKey posKey, World world) {
-        var pdc = disp.getPersistentDataContainer();
+        PersistentDataContainer pdc = disp.getPersistentDataContainer();
         if (!pdc.has(posKey, PersistentDataType.STRING)) return;
         String[] parts = Objects.requireNonNull(pdc.get(posKey, PersistentDataType.STRING)).split(",");
         UUID worldId = UUID.fromString(parts[3]);
