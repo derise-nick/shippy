@@ -26,7 +26,7 @@ public class CommandDebugShip implements CommandExecutor {
                 debugVisualizer.disableDebugFor(player);
                 player.sendMessage("§cShip debug disabled.");
             } else {
-                ActiveShip ship = plugin.getManager().getShipNear(player.getLocation());
+                ActiveShip ship = plugin.getShipManager().getShipNear(player.getLocation());
                 if (ship != null) {
                     debugVisualizer.enableDebugFor(player, ship);
                     player.sendMessage("§aShip debug enabled. Sneak to view bounding boxes.");

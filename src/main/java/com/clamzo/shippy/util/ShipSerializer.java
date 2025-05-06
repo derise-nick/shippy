@@ -1,16 +1,15 @@
 package com.clamzo.shippy.util;
 
 import com.clamzo.shippy.ShippyPlugin;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
 import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.*;
@@ -24,6 +23,8 @@ public class ShipSerializer {
 
     public ActiveShip deserializeShip(SerializableActiveShip data) {
         World world = Bukkit.getWorld(data.standLocation.getWorld().getUID());
+        Chunk chunk = data.standLocation.getChunk();
+        chunk.addPluginChunkTicket(plugin);
         if (world == null) return null;
 
         // ArmorStand
@@ -39,28 +40,31 @@ public class ShipSerializer {
 
         // BlockDisplays
         List<Entity> entities = new ArrayList<>();
-        Map<UUID,BlockDisplay> cannons = new HashMap<>();
+        Map<UUID,BlockDisplay> interactionRefs = new HashMap<>();
         for (var s : data.entities) {
             switch (s.entityType) {
                 case EntityType.ITEM_DISPLAY:
                     ItemDisplay itemDisp = (ItemDisplay) world.spawnEntity(s.location, EntityType.ITEM_DISPLAY);
                     itemDisp.setItemStack(ItemStack.deserializeBytes(s.itemStack));
-                    itemDisp.setTransformation(new Transformation(s.transformation, new AxisAngle4f(), new Vector3f(1, 1, 1), new AxisAngle4f()));
+                    itemDisp.setTransformation(new Transformation(s.translation, s.rotation, new Vector3f(1.5f, 1.5f, 1.5f), new Quaternionf()));
                     itemDisp.setPersistent(true);
                     itemDisp.setTeleportDuration(3);
                     entities.add(itemDisp);
                     break;
                 case EntityType.BLOCK_DISPLAY:
                     BlockDisplay blockDisp = (BlockDisplay) world.spawnEntity(s.location, EntityType.BLOCK_DISPLAY);
-                    blockDisp.setTransformation(new Transformation(s.transformation, new AxisAngle4f(), new Vector3f(1, 1, 1), new AxisAngle4f()));
+                    blockDisp.setTransformation(new Transformation(s.translation, new AxisAngle4f(), new Vector3f(1, 1, 1), new AxisAngle4f()));
                     blockDisp.setBlock(Bukkit.createBlockData(s.blockData));
                     blockDisp.setPersistent(true);
                     blockDisp.setTeleportDuration(3);
                     entities.add(blockDisp);
-                    if (blockDisp.getBlock().getMaterial().equals(Material.DISPENSER) || blockDisp.getBlock().getMaterial().equals(Material.BARREL)) {
+                    PersistentDataContainer pdc = blockDisp.getPersistentDataContainer();
+                    boolean isCustomBlock = (!pdc.has(new NamespacedKey(plugin, "custom_blockpos"), PersistentDataType.STRING));
+                    boolean isCannon = blockDisp.getBlock().getMaterial().equals(Material.GRINDSTONE) && isCustomBlock;
+                    if (isCannon || blockDisp.getBlock().getMaterial().equals(Material.BARREL)) {
                         Interaction interaction = getInteraction(world, blockDisp, stand);
-                        cannons.put(blockDisp.getUniqueId(), blockDisp);
                         entities.add(interaction);
+                        interactionRefs.put(blockDisp.getUniqueId(), blockDisp);
                     }
                     break;
                 case EntityType.INTERACTION:
@@ -76,8 +80,10 @@ public class ShipSerializer {
                     entities.add(interaction);
             }
         }
-
-        return new ActiveShip(stand.getUniqueId(), stand, entities, cannons);
+        ActiveShip newShip = new ActiveShip(stand.getUniqueId(), stand, entities, interactionRefs, data.helmHeight, plugin);
+        newShip.generateCannons();
+        chunk.removePluginChunkTicket(plugin);
+        return newShip;
     }
 
     private @NotNull Interaction getInteraction(World world, BlockDisplay blockDisp, ArmorStand stand) {
@@ -105,7 +111,8 @@ public class ShipSerializer {
                 case EntityType.ITEM_DISPLAY -> new SerializableActiveShip.SerializedEntity(
                         d.getLocation(),
                         ((ItemDisplay) d).getItemStack(),
-                        ((ItemDisplay) d).getTransformation().getTranslation()
+                        ((ItemDisplay) d).getTransformation().getTranslation(),
+                        ((ItemDisplay) d).getTransformation().getLeftRotation()
                 );
                 default -> new SerializableActiveShip.SerializedEntity(
                         d.getLocation(),
@@ -117,7 +124,8 @@ public class ShipSerializer {
         return new SerializableActiveShip(
                 ship.getOwnerId(),
                 ship.getStandEntity().getLocation(),
-                displays
+                displays,
+                ship.getHelmHeight()
         );
     }
 }
