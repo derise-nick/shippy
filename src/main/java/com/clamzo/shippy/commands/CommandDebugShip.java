@@ -1,7 +1,7 @@
 package com.clamzo.shippy.commands;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.util.ActiveShip;
+import com.clamzo.shippy.ship.ActiveShip;
 import com.clamzo.shippy.util.DebugVisualizer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

@@ -1,8 +1,8 @@
-package com.clamzo.shippy.util;
+package com.clamzo.shippy.ship;
 
 import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.behavior.ShipController;
-import com.clamzo.shippy.ship.Cannon;
+import com.clamzo.shippy.util.OrientedBoundingBox;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -163,29 +163,17 @@ public class ActiveShip implements InventoryHolder {
 
     public void generateCannons() {
         NamespacedKey displayKey = new NamespacedKey(plugin, "display_uuid");
-        List<Interaction> cannonDisplays = new ArrayList<>();
         for (Entity entity : entities) {
             if (entity instanceof Interaction interaction) {
                 PersistentDataContainer container = interaction.getPersistentDataContainer();
                 if (container.has(displayKey, PersistentDataType.STRING)) {
                     Entity refEntity = Bukkit.getEntity(UUID.fromString(container.get(displayKey, PersistentDataType.STRING)));
                     if (refEntity instanceof BlockDisplay blockDisplay && blockDisplay.getBlock().getMaterial() == Material.GRINDSTONE) {
-                        ItemDisplay cannonView = (ItemDisplay) interaction.getWorld().spawnEntity(interaction.getLocation(), EntityType.ITEM_DISPLAY);
-//                        ItemStack cannon = new ItemStack(Material.GRINDSTONE, 1);
-//                        ItemMeta helmMeta = cannon.getItemMeta();
-//                        helmMeta.setCustomModelData(313);
-//                        cannon.setItemMeta(helmMeta);
-//                        cannonView.setItemStack(cannon);
-//
-//                        cannonView.setPersistent(true);
-//                        cannonView.setTeleportDuration(3);
-//                        cannonView.setTransformation(blockDisplay.getTransformation());
                         addCannon(interaction);
                     }
                 }
             }
         }
-        entities.addAll(cannonDisplays);
     }
 }
 

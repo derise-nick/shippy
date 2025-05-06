@@ -34,9 +34,8 @@ public class ShipyardListener implements Listener {
     private final int shipyardHeight = 8;
     private final int waterLevel = -2;
 
-    // TODO: Make the port work with whoever hit the button
     // TODO: Fix the buttons to work facing-agnostically
-    // TODO: Trigger from sign use instead of button
+    // TODO: Fix button to not float in air or get included in ship
 
     private BlockFace facing = BlockFace.NORTH;
     private final PortAndShipManager shipManager;

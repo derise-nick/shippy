@@ -1,4 +1,4 @@
-package com.clamzo.shippy.util;
+package com.clamzo.shippy.ship;
 
 import com.clamzo.shippy.ShippyPlugin;
 import org.bukkit.*;

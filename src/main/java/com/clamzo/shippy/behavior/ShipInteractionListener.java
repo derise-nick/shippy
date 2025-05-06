@@ -1,7 +1,7 @@
 package com.clamzo.shippy.behavior;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.util.ActiveShip;
+import com.clamzo.shippy.ship.ActiveShip;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.SavedBlock;
 import net.kyori.adventure.text.Component;
