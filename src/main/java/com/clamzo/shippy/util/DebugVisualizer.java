@@ -1,5 +1,6 @@
 package com.clamzo.shippy.util;
 
+import com.clamzo.shippy.ship.ActiveShip;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Particle;

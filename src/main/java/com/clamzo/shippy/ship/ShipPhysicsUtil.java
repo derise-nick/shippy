@@ -1,6 +1,7 @@
-package com.clamzo.shippy.util;
+package com.clamzo.shippy.ship;
 
 import com.clamzo.shippy.ShippyPlugin;
+import com.clamzo.shippy.util.OrientedBoundingBox;
 import org.bukkit.Bukkit;
 import org.bukkit.Input;
 import org.bukkit.Location;
