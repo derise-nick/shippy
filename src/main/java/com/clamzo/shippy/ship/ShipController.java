@@ -1,8 +1,6 @@
-package com.clamzo.shippy.behavior;
+package com.clamzo.shippy.ship;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.ship.ActiveShip;
-import com.clamzo.shippy.ship.ShipPhysicsUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
@@ -15,10 +13,10 @@ public class ShipController {
     private Vector velocity = new Vector(0, 0, 0);
     private final ArmorStand shipSeat;
     private final ActiveShip ship;
-    private final double acceleration = 0.004;
-    private final double maxSpeed = 1;
-    private final double drag = 0.98;
-    private final double turnSpeed = 2.5; // degrees per tick
+    private double acceleration = 0.004;
+    private double maxSpeed = 1;
+    private double drag = 0.98;
+    private double turnSpeed = 2.5; // degrees per tick
 
     private double angularVelocity;
 
@@ -26,6 +24,66 @@ public class ShipController {
         this.shipSeat = ship.getStandEntity();
         this.ship = ship;
         this.plugin = JavaPlugin.getPlugin(ShippyPlugin.class);
+        calibrateStats();
+    }
+
+    private void calibrateStats() {
+        int blockCount = ship.getEntities().toArray().length;
+        acceleration = Math.max(0.04 - blockCount/2000f,0.005);
+        maxSpeed = Math.min(0.4 + blockCount/200f, 1);
+        drag = Math.min(0.91 + blockCount/1000f,0.97);
+        turnSpeed = Math.max(3.5 - blockCount/80f, 2.5);
+        plugin.getLogger().info("Block Count: " + blockCount);
+        plugin.getLogger().info("Acceleration: " + acceleration);
+        plugin.getLogger().info("MaxSpeed: " + maxSpeed);
+        plugin.getLogger().info("Drag: " + drag);
+        plugin.getLogger().info("TurnSpeed: " + turnSpeed);
+
+//        switch (blockCount / 10) {
+//            case 0:
+//                plugin.getLogger().info("Ship size is between 0 and 9");
+//                acceleration = 0.05;
+//                maxSpeed = 0.4;
+//                drag = 0.91;
+//                turnSpeed = 3.5;
+//                break;
+//            case 1:
+//                plugin.getLogger().info("Ship size is between 10 and 19");
+//                acceleration = 0.05;
+//                maxSpeed = 0.45;
+//                drag = 0.92;
+//                turnSpeed = 3.375;
+//                break;
+//            case 2:
+//                plugin.getLogger().info("Ship size is between 20 and 29");
+//                acceleration = 0.045;
+//                maxSpeed = 0.5;
+//                drag = 0.93;
+//                turnSpeed = 3.25;
+//                break;
+//            case 3:
+//                plugin.getLogger().info("Ship size is between 30 and 39");
+//                acceleration = 0.045;
+//                maxSpeed = 0.55;
+//                drag = 0.935;
+//                turnSpeed = 3.125;
+//                break;
+//            case 4:
+//                plugin.getLogger().info("Ship size is between 40 and 49");
+//                acceleration = 0.045;
+//                maxSpeed = 0.55;
+//                drag = 0.935;
+//                turnSpeed = 3.125;
+//                break;
+//            case 5:
+//                plugin.getLogger().info("Ship size is between 50 and 59");
+//                break;
+//            case 6:
+//                plugin.getLogger().info("Ship size is between 60 and 69");
+//                break;
+//            default:
+//                plugin.getLogger().warning("We somehow ended up with a ship that was 0 or more than 70 blocks!");
+//        }
     }
 
     private final ShippyPlugin plugin;

@@ -1,7 +1,6 @@
 package com.clamzo.shippy.ship;
 
 import com.clamzo.shippy.ShippyPlugin;
-import com.clamzo.shippy.behavior.ShipController;
 import com.clamzo.shippy.util.OrientedBoundingBox;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
