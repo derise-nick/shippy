@@ -173,7 +173,7 @@ public class ShipyardListener implements Listener {
 
                             Vector rel = saveLoc.toVector().subtract(helmVector);
                             boolean isCustomBlock = customBlockManager.locationIsCustomBlock(saveLoc);
-                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY(), rel.getBlockZ(), bd, isCustomBlock);
+                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY()+2, rel.getBlockZ(), bd, isCustomBlock);
                             if (bd.getMaterial() == Material.OAK_FENCE && isCustomBlock) sb.dy = y+waterLevel;
                             shipBlocks.add(sb);
                         }

@@ -255,7 +255,7 @@ public class PortAndShipManager {
                 NamespacedKey helmFlag = new NamespacedKey(plugin, "is_helm");
                 PersistentDataContainer container = entity.getPersistentDataContainer();
                 if (container.has(helmFlag, PersistentDataType.BYTE)) {
-                    entity.teleport(base);
+                    entity.teleport(base.clone().add(0,1.75,0));
                     continue;
                 }
                 addBoundInteraction(ship, interaction, stand);
@@ -270,8 +270,10 @@ public class PortAndShipManager {
         NamespacedKey displayId = new NamespacedKey(plugin, "display_uuid");
         PersistentDataContainer container = interaction.getPersistentDataContainer();
         String id = container.get(displayId, PersistentDataType.STRING);
-        BlockDisplay blockDisp = ship.getCannons().get(UUID.fromString(id));
-
+        BlockDisplay blockDisp = ship.getInteractionRefs().get(UUID.fromString(id));
+        if (blockDisp == null) {
+            return;
+        }
         Vector3f t = blockDisp.getTransformation().getTranslation();
         Vector localOffset = new Vector(t.x()+0.5, t.y(), t.z()+0.5);
 
@@ -304,10 +306,10 @@ public class PortAndShipManager {
     }
 
 
-    public void addActiveShip(UUID standId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons, int helmHeight) {
-        if (standEntity == null) return;
-        ActiveShip ship = new ActiveShip(standId, standEntity, entities, cannons, helmHeight);
+    public ActiveShip addActiveShip(UUID standId, @NotNull ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> interactionRefs, int helmHeight) {
+        ActiveShip ship = new ActiveShip(standId, standEntity, entities, interactionRefs, helmHeight, plugin);
         activeShips.put(standId, ship);
+        return ship;
     }
 
     public ActiveShip getActiveShipForPlayerUUID(UUID uniqueId) {
@@ -339,9 +341,8 @@ public class PortAndShipManager {
     }
 
     public SerializableActiveShip serializeActiveShip(ActiveShip ship) {
-        SerializableActiveShip shi = serializer.serializeShip(ship);
-        shi.entities.forEach(this::debugJsonFailure);
-        return shi;
+        //        shi.entities.forEach(this::debugJsonFailure);   // uncomment this line to debug serialization
+        return serializer.serializeShip(ship);
     }
 
     public ActiveShip deserializeActiveShip(SerializableActiveShip data) {

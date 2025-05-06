@@ -51,8 +51,7 @@ public class CustomBlockListener implements Listener {
                     spawnLoc, EntityType.ITEM_DISPLAY);
             display.setItemStack(item);
             display.setPersistent(true);
-            BlockPosKey bpk = customBlockManager.getBpkFromLoc(block.getLocation());
-            customBlockManager.addCustomItemDisplay(bpk, display);
+            customBlockManager.addCustomItemDisplay(block.getLocation(), display);
 
             display.setTransformation(new Transformation(
                     new Vector3f(0,0,0),
@@ -75,15 +74,13 @@ public class CustomBlockListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         assert event.getClickedBlock() != null;
-        BlockPosKey bpk = customBlockManager.getBpkFromLoc(event.getClickedBlock().getLocation());
-         if (!customBlockManager.getCustomItemDisplays().containsKey(bpk)) return;
+         if (!customBlockManager.locationIsCustomBlock(event.getClickedBlock().getLocation())) return;
         event.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
-        BlockPosKey key = customBlockManager.getBpkFromLoc(e.getBlock().getLocation());
-        UUID displayId = customBlockManager.removeCustomItemDisplay(key);
+        UUID displayId = customBlockManager.removeCustomItemDisplay(e.getBlock().getLocation());
         if (displayId != null) {
             Objects.requireNonNull(Bukkit.getEntity(displayId)).remove();
         }

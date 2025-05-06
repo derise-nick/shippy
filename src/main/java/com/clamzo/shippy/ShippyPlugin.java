@@ -2,8 +2,8 @@ package com.clamzo.shippy;
 
 import com.clamzo.shippy.behavior.CustomBlockListener;
 import com.clamzo.shippy.behavior.CustomBlockManager;
-import com.clamzo.shippy.behavior.ShipyardListener;
 import com.clamzo.shippy.behavior.ShipInteractionListener;
+import com.clamzo.shippy.behavior.ShipyardListener;
 import com.clamzo.shippy.commands.CommandDebugShip;
 import com.clamzo.shippy.commands.CommandGivePort;
 import com.clamzo.shippy.commands.CommandGiveShipyard;
@@ -12,6 +12,7 @@ import com.clamzo.shippy.util.DebugVisualizer;
 import com.clamzo.shippy.util.PortAndShipManager;
 import com.clamzo.shippy.util.ShipPhysicsUtil;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 
@@ -35,15 +36,24 @@ public class ShippyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new StructurePreviewListener(this), this);
         getServer().getPluginManager().registerEvents(new ShipInteractionListener(this), this);
         getServer().getPluginManager().registerEvents(new CustomBlockListener(this), this);
-        shipManager.loadPortsFromDisk();
-        shipManager.loadActiveShips();
-        shipManager.activateAllShips();
-        shipManager.loadAllShips();
-        shipManager.startAutoSaveTask(this, 20L * 300L);
-        physicsUtil = new ShipPhysicsUtil(this);
-        physicsUtil.activateDeckPhysics();
-        customBlockManager.loadCustomBlockModels();
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                shipManager.loadPortsFromDisk();
+                shipManager.loadActiveShips();
+                shipManager.activateAllShips();
+                shipManager.loadAllShips();
+                shipManager.startAutoSaveTask(ShippyPlugin.this, 20L * 300L);
+
+                physicsUtil = new ShipPhysicsUtil(ShippyPlugin.this);
+                physicsUtil.activateDeckPhysics();
+
+                customBlockManager.loadCustomBlockModels();
+            }
+        }.runTaskLater(this, 20L); // 60 ticks = 3 seconds
     }
+
 
     @Override
     public void onDisable() {

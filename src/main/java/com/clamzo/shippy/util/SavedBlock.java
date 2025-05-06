@@ -14,6 +14,7 @@ public class SavedBlock {
         this.dy = y;
         this.dz = z;
         this.blockData = data.getAsString();
+        this.isCustomBlock = isCustomBlock;
     }
 
     public BlockData getBlockData() {

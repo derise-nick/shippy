@@ -1,23 +1,25 @@
 package com.clamzo.shippy.util;
 
+import com.clamzo.shippy.ShippyPlugin;
 import com.clamzo.shippy.behavior.ShipController;
+import com.clamzo.shippy.ship.Cannon;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.Entity;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ActiveShip implements InventoryHolder {
@@ -25,19 +27,23 @@ public class ActiveShip implements InventoryHolder {
     private final ArmorStand standEntity;
     private final List<Entity> entities;
     private final ShipController controller;
+    private final ShippyPlugin plugin;
     private @NotNull List<OrientedBoundingBox> cachedBoundingBoxes;
-    private final Map<UUID, BlockDisplay> cannons;
     private final Inventory inventory;
     private final int helmHeight;
+    private final Map<UUID, Cannon> cannons;
+    private final Map<UUID, BlockDisplay> interactionRefs;
 
-    public ActiveShip(UUID ownerId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> cannons, int helmHeight) {
+    public ActiveShip(UUID ownerId, ArmorStand standEntity, List<Entity> entities, Map<UUID, BlockDisplay> interactionRefs, int helmHeight, ShippyPlugin plugin) {
+        this.plugin = plugin;
         this.ownerId = ownerId;
         this.standEntity = standEntity;
         this.entities = entities;
+        this.interactionRefs = interactionRefs;
         this.controller = new ShipController(this);
-        this.cannons = cannons;
         this.inventory = Bukkit.createInventory(this, 54, Component.text("Hold"));
         this.helmHeight = helmHeight;
+        this.cannons = new HashMap<>();
     }
 
     public void updateBoundingBoxes() {
@@ -126,7 +132,7 @@ public class ActiveShip implements InventoryHolder {
         return cachedBoundingBoxes;
     }
 
-    public Map<UUID, BlockDisplay> getCannons() {
+    public Map<UUID, Cannon> getCannons() {
         return cannons;
     }
 
@@ -137,6 +143,49 @@ public class ActiveShip implements InventoryHolder {
 
     public int getHelmHeight() {
         return helmHeight;
+    }
+
+    public void addCannon(Interaction interaction) {
+        cannons.put(interaction.getUniqueId(), new Cannon(this.ownerId, interaction.getUniqueId(), 10, 30));
+    }
+
+    public boolean fireCannon(UUID cannonId) {
+        if (!cannons.containsKey(cannonId))  {
+            plugin.getLogger().warning("Attempted to fire unregistered cannon! Id is: " + cannonId);
+            return false;
+        }
+        return cannons.get(cannonId).fire();
+    }
+
+    public Map<UUID, BlockDisplay> getInteractionRefs() {
+        return interactionRefs;
+    }
+
+    public void generateCannons() {
+        NamespacedKey displayKey = new NamespacedKey(plugin, "display_uuid");
+        List<Interaction> cannonDisplays = new ArrayList<>();
+        for (Entity entity : entities) {
+            if (entity instanceof Interaction interaction) {
+                PersistentDataContainer container = interaction.getPersistentDataContainer();
+                if (container.has(displayKey, PersistentDataType.STRING)) {
+                    Entity refEntity = Bukkit.getEntity(UUID.fromString(container.get(displayKey, PersistentDataType.STRING)));
+                    if (refEntity instanceof BlockDisplay blockDisplay && blockDisplay.getBlock().getMaterial() == Material.GRINDSTONE) {
+                        ItemDisplay cannonView = (ItemDisplay) interaction.getWorld().spawnEntity(interaction.getLocation(), EntityType.ITEM_DISPLAY);
+//                        ItemStack cannon = new ItemStack(Material.GRINDSTONE, 1);
+//                        ItemMeta helmMeta = cannon.getItemMeta();
+//                        helmMeta.setCustomModelData(313);
+//                        cannon.setItemMeta(helmMeta);
+//                        cannonView.setItemStack(cannon);
+//
+//                        cannonView.setPersistent(true);
+//                        cannonView.setTeleportDuration(3);
+//                        cannonView.setTransformation(blockDisplay.getTransformation());
+                        addCannon(interaction);
+                    }
+                }
+            }
+        }
+        entities.addAll(cannonDisplays);
     }
 }
 
