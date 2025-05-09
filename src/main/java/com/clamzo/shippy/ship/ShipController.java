@@ -33,57 +33,6 @@ public class ShipController {
         maxSpeed = Math.min(0.4 + blockCount/200f, 1);
         drag = Math.min(0.91 + blockCount/1000f,0.97);
         turnSpeed = Math.max(3.5 - blockCount/80f, 2.5);
-        plugin.getLogger().info("Block Count: " + blockCount);
-        plugin.getLogger().info("Acceleration: " + acceleration);
-        plugin.getLogger().info("MaxSpeed: " + maxSpeed);
-        plugin.getLogger().info("Drag: " + drag);
-        plugin.getLogger().info("TurnSpeed: " + turnSpeed);
-
-//        switch (blockCount / 10) {
-//            case 0:
-//                plugin.getLogger().info("Ship size is between 0 and 9");
-//                acceleration = 0.05;
-//                maxSpeed = 0.4;
-//                drag = 0.91;
-//                turnSpeed = 3.5;
-//                break;
-//            case 1:
-//                plugin.getLogger().info("Ship size is between 10 and 19");
-//                acceleration = 0.05;
-//                maxSpeed = 0.45;
-//                drag = 0.92;
-//                turnSpeed = 3.375;
-//                break;
-//            case 2:
-//                plugin.getLogger().info("Ship size is between 20 and 29");
-//                acceleration = 0.045;
-//                maxSpeed = 0.5;
-//                drag = 0.93;
-//                turnSpeed = 3.25;
-//                break;
-//            case 3:
-//                plugin.getLogger().info("Ship size is between 30 and 39");
-//                acceleration = 0.045;
-//                maxSpeed = 0.55;
-//                drag = 0.935;
-//                turnSpeed = 3.125;
-//                break;
-//            case 4:
-//                plugin.getLogger().info("Ship size is between 40 and 49");
-//                acceleration = 0.045;
-//                maxSpeed = 0.55;
-//                drag = 0.935;
-//                turnSpeed = 3.125;
-//                break;
-//            case 5:
-//                plugin.getLogger().info("Ship size is between 50 and 59");
-//                break;
-//            case 6:
-//                plugin.getLogger().info("Ship size is between 60 and 69");
-//                break;
-//            default:
-//                plugin.getLogger().warning("We somehow ended up with a ship that was 0 or more than 70 blocks!");
-//        }
     }
 
     private final ShippyPlugin plugin;
@@ -109,7 +58,7 @@ public class ShipController {
 
         // Turning
         if (driver.getCurrentInput().isLeft()) {
-            yaw -= turnSpeed;  // turnSpeed is a constant 2.5
+            yaw -= turnSpeed;
             driver.setRotation(driver.getYaw() - (float) turnSpeed, driver.getPitch());
             angularVelocity = Math.toRadians(turnSpeed);
         }

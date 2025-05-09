@@ -8,13 +8,15 @@ public class SavedBlock {
     public int dx, dy, dz;
     private final String blockData;
     public boolean isCustomBlock;
+    public String facing;
 
-    public SavedBlock(int x, int y, int z, BlockData data, boolean isCustomBlock) {
+    public SavedBlock(int x, int y, int z, BlockData data, boolean isCustomBlock, String facing) {
         this.dx = x;
         this.dy = y;
         this.dz = z;
         this.blockData = data.getAsString();
         this.isCustomBlock = isCustomBlock;
+        this.facing = facing;
     }
 
     public BlockData getBlockData() {
