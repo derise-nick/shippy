@@ -64,7 +64,7 @@ public class CustomBlockListener implements Listener {
             String posString = block.getX() + ","
                     + block.getY() + ","
                     + block.getZ() + ","
-                    + block.getWorld().getUID().toString();
+                    + block.getWorld().getUID();
             display.getPersistentDataContainer().set(posKey, PersistentDataType.STRING, posString);
 
         }

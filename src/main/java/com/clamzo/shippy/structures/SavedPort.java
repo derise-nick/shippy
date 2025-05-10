@@ -5,4 +5,5 @@ public class SavedPort {
     public double x, y, z;
     public String world;
     public String facing;
+    public String type;
 }

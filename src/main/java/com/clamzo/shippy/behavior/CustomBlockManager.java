@@ -70,6 +70,13 @@ public class CustomBlockManager {
         customItemDisplays.put(makeKey(loc), item.getUniqueId());
     }
 
+    public ItemDisplay getItemDisplayForLocation(Location loc) {
+        String key = makeKey(loc);
+        UUID id = customItemDisplays.get(key);
+        if (id != null && Bukkit.getEntity(id) instanceof ItemDisplay itemDisplay) return itemDisplay;
+        return null;
+    }
+
     public UUID removeCustomItemDisplay(Location loc) {
         return customItemDisplays.remove(makeKey(loc));
     }
