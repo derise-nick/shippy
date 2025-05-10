@@ -552,7 +552,6 @@ public class PortAndShipManager {
     }
 
     public void spawnShip(UUID shipId, Player player, Location targetLoc) {
-        plugin.getLogger().info("The dock is facing: " + StructurePlacementUtil.getCardinalFacing(targetLoc));
         List<SavedBlock> saved = getShipStructure(shipId);
         if (saved == null || saved.isEmpty()) {
             player.sendMessage(Component.text("No saved ship found.").color(NamedTextColor.RED));

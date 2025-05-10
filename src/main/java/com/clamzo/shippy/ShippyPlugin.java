@@ -4,10 +4,10 @@ import com.clamzo.shippy.behavior.*;
 import com.clamzo.shippy.commands.CommandDebugShip;
 import com.clamzo.shippy.commands.CommandGivePort;
 import com.clamzo.shippy.commands.CommandGiveShipyard;
+import com.clamzo.shippy.ship.ShipPhysicsUtil;
 import com.clamzo.shippy.structures.StructurePreviewListener;
 import com.clamzo.shippy.util.DebugVisualizer;
 import com.clamzo.shippy.util.PortAndShipManager;
-import com.clamzo.shippy.ship.ShipPhysicsUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 

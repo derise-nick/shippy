@@ -9,7 +9,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -73,7 +72,7 @@ public class ShipyardListener implements Listener {
         // Get the base location (one block above clicked surface)
         Location baseLocation = clickedBlock.getRelative(facing).getLocation();
 
-        if (!hasRoomForShipyard(baseLocation)) {
+        if (!StructurePlacementUtil.hasRoomForShipyard(baseLocation, facing, shipyardWidth, shipyardLength, shipyardHeight)) {
             player.sendMessage(Component.text("Not enough space to place the Shipyard.").color(NamedTextColor.RED));
             return;
         }
@@ -85,31 +84,13 @@ public class ShipyardListener implements Listener {
         player.sendMessage(Component.text("Shipyard placed successfully!").color(NamedTextColor.GREEN));
     }
 
-    private boolean hasRoomForShipyard(Location base) {
-        // TODO: Move this method to util
-        World world = base.getWorld();
-
-        for (int x = 0; x < shipyardWidth; x++) {
-            for (int z = 0; z < shipyardLength; z++) {
-                for (int y = 0; y < shipyardHeight; y++) {
-                    Location check = StructurePlacementUtil.offsetByFacing(base, x, y, z, facing);
-                    Block block = world.getBlockAt(check);
-                    if (!block.isPassable()) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
     @EventHandler
     public void onRedstoneChange(BlockRedstoneEvent event) {
         if (event.getNewCurrent() == 0) return;
         Block button = event.getBlock();
         if (button.getType() != Material.STONE_BUTTON) return;
 
-        Location loc = button.getLocation().clone().add(0,0,0);
+        Location loc = button.getLocation().clone().add(0, 0, 0);
         Location shipyard = shipManager.findShipyardForLocation(loc);
         if (shipyard != null) {
             Player nearestPlayer = button.getWorld().getNearbyEntities(loc, 3, 3, 3).stream()
@@ -127,7 +108,7 @@ public class ShipyardListener implements Listener {
                 Location buttonLoc = StructurePlacementUtil.offsetByFacing(shipyard, 1, 1, 0, StructurePlacementUtil.getCardinalFacing(shipyard));
 
                 // First pass: Find helm location
-                for (int x = -1; x < shipyardWidth-1; x++) {
+                for (int x = -1; x < shipyardWidth - 1; x++) {
                     for (int y = 0; y < shipyardHeight; y++) {
                         for (int z = 0; z < shipyardLength; z++) {
                             boolean isCorner =
@@ -147,7 +128,6 @@ public class ShipyardListener implements Listener {
                         }
                     }
                 }
-                plugin.getLogger().info("HelmLoc: " + helmLoc);
 
                 if (helmCount == 0) {
                     nearestPlayer.sendMessage(Component.text("Your ship must have exactly one helm block to act as a helm.").color(NamedTextColor.RED));
@@ -163,7 +143,7 @@ public class ShipyardListener implements Listener {
 
                 Vector helmVector = helmLoc.toVector(); // Used for relative offsets
 
-                for (int x = -1; x < shipyardWidth-1; x++) {
+                for (int x = -1; x < shipyardWidth - 1; x++) {
                     for (int y = 0; y < shipyardHeight; y++) {
                         for (int z = 0; z < shipyardLength; z++) {
                             boolean isCorner =
@@ -179,8 +159,8 @@ public class ShipyardListener implements Listener {
                             Vector rel = saveLoc.toVector().subtract(helmVector);
                             boolean isCustomBlock = customBlockManager.locationIsCustomBlock(saveLoc);
                             // TODO: get the facing from each block instead of using helm facing
-                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY()+2, rel.getBlockZ(), bd, isCustomBlock, facing.toString());
-                            if (bd.getMaterial() == Material.OAK_FENCE && isCustomBlock) sb.dy = y+waterLevel;
+                            SavedBlock sb = new SavedBlock(rel.getBlockX(), rel.getBlockY() + 2, rel.getBlockZ(), bd, isCustomBlock, facing.toString());
+                            if (bd.getMaterial() == Material.OAK_FENCE && isCustomBlock) sb.dy = y + waterLevel;
                             shipBlocks.add(sb);
                         }
                     }
@@ -197,7 +177,7 @@ public class ShipyardListener implements Listener {
                 ItemMeta meta = shipItem.getItemMeta();
                 meta.displayName(Component.text("Your Custom Ship"));
 
-                meta.getPersistentDataContainer().set(this.key, PersistentDataType.STRING,  shipId.toString());
+                meta.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, shipId.toString());
 
                 shipItem.setItemMeta(meta);
                 nearestPlayer.getInventory().addItem(shipItem);

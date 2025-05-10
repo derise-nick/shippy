@@ -75,7 +75,7 @@ public class PortListener implements Listener {
         String posString = (int) Math.floor(itemDisplay.getX()) + ","
                 + (int) Math.floor(itemDisplay.getY()) + ","
                 + (int) Math.floor(itemDisplay.getZ()) + ","
-                + itemDisplay.getWorld().getUID().toString();
+                + itemDisplay.getWorld().getUID();
         itemDisplay.getPersistentDataContainer().set(posKey, PersistentDataType.STRING, posString);
         customBlockManager.addCustomItemDisplay(itemDisplay.getLocation(), itemDisplay);
         this.portManager.addPortLocation(itemDisplay.getUniqueId(), itemDisplay.getLocation().clone().setRotation(StructurePlacementUtil.getYawFromFacing(facing.toString()), 0));
@@ -132,7 +132,6 @@ public class PortListener implements Listener {
             NamespacedKey key = new NamespacedKey(plugin, "ship_id");
             if (!itemStack.getItemMeta().getPersistentDataContainer().has(key)) return;
             String shipId = itemStack.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
-            plugin.getLogger().info("Found ship with id: " + shipId);
             if (shipId != null && event.getWhoClicked() instanceof Player player) {
                 portManager.spawnShip(UUID.fromString(shipId), player, getLaunchLocation(player));
             }
